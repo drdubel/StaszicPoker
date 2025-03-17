@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <title>Example with Buttons</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <script src="/static/poker.js"></script>
+        <style>
+    body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        margin-top: 50px;
+    }
+    button {
+        margin: 10px;
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+    }
+    #message {
+        margin-top: 20px;
+        font-size: 18px;
+        color: #333;
+    }
+        </style>
+    </head>
+    <body>
+        <h1>Example HTML with 5 Buttons</h1>
+        <button onclick="action(100)">Bet 100</button>
+        <button onclick="action(200)">Bet 200</button>
+        <button onclick="action(300)">Bet 300</button>
+        <button onclick="action(400)">Bet 400</button>
+        <button onclick="action(500)">Bet 500</button>
+        <button onclick="action(1000)">All in</button>
+        <button onclick="action(500)">Call</button>
+        <button onclick="action(true)">Check</button>
+        <button onclick="action(false)">Fold</button>
+        <div id="message"></div>
+        <h1>
+            Current bet:
+            <span id="currentBet"></span>
+        </h1>
+    </body>
+</html>

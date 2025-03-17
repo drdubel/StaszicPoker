@@ -1,6 +1,7 @@
 import logging
 
 from fastapi import FastAPI, WebSocket
+
 from backend.gameLogic import Table
 from backend.websocket import ws_manager
 
