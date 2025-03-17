@@ -3,7 +3,7 @@ from secrets import token_urlsafe
 from typing import Optional
 
 from authlib.integrations.starlette_client import OAuth, OAuthError
-from fastapi import FastAPI, Cookie
+from fastapi import Cookie, FastAPI, Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.config import Config
@@ -83,6 +83,16 @@ async def auth(request: Request):
         response = RedirectResponse(url="/lobby")
         response.set_cookie("access_token", access_token, max_age=3600 * 24 * 14)
         return response
+
+
+@app.get("/logout")
+async def logout(request: Request, response: Response, access_token: Optional[str] = Cookie(None)):
+    access_cookies.pop(access_token)
+    with open("turbacz/data/cookies.pickle", "wb") as cookies:
+        dump(access_cookies, cookies)
+    request.session.pop("user", None)
+    response.delete_cookie(key="access_token")
+    return RedirectResponse(url="/")
 
 
 if __name__ == "__main__":

@@ -11,6 +11,14 @@ app = FastAPI()
 tables = {0: Table(10, 420)}
 
 
+@app.websocket("/ws/join/{tableId}/{wsId}")
+async def joinTable(websocket: WebSocket, tableId: str, wsId: str):
+    await ws_manager.connect(websocket)
+
+    tables.add_player(wsId, 1000)
+    await ws_manager.broadcast("Player joined", "join")
+
+
 @app.websocket("/ws/betting/{tableId}/{wsId}")
 async def websocket_betting(websocket: WebSocket, tableId: str, wsId: str):
     await ws_manager.connect(websocket)
