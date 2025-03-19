@@ -1,5 +1,5 @@
 var wsId = Math.floor(Math.random() * 2000000000)
-var betting = new WebSocket("ws://127.0.0.1:5000/ws/betting/420/" + wsId)
+var betting = new WebSocket("ws://127.0.0.1:5000/ws/betting/0/" + wsId)
 
 
 betting.onmessage = function (event) {

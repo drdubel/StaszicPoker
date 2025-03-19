@@ -8,7 +8,7 @@ from backend.websocket import ws_manager
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
-tables: dict[int, Table] = {0: Table(10, 420)}
+tables: dict[int, Table] = {0: Table(10)}
 
 
 @app.websocket("/ws/join/{tableId}/{wsId}")
