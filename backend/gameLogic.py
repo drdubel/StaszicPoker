@@ -5,8 +5,11 @@ from backend.websocket import ws_manager
 
 
 class Table:
-    def __init__(self, min_bet: int, tableId: int):
-        self.tableId: int = tableId
+    tableId: int = 0
+
+    def __init__(self, min_bet: int):
+        Table.tableId = Table.tableId % 1e9
+        self.tableId: int = Table.tableId
         self.community_cards: list[str] = []
         self.last_bet: int = 0
         self.first_to_act: int = 0
@@ -26,6 +29,8 @@ class Table:
         self.min_bet: int = min_bet
         self.prev_bet: int = 0
         self.current_bet: int = 0
+
+        Table.tableId += 1
 
     def add_player(self, player: str, buyIn: int):
         self.player_cards[player] = []

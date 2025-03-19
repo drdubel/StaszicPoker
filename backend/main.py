@@ -15,7 +15,8 @@ tables: dict[int, Table] = {0: Table(10, 420)}
 async def joinTable(websocket: WebSocket, tableId: str, wsId: str):
     await ws_manager.connect(websocket)
 
-    tables[0].add_player(wsId, 1000)
+    buyIn = websocket.iter_json()["buyIn"]
+    tables[tableId].add_player(wsId, buyIn)
     await ws_manager.broadcast("Player joined", "join")
 
 
