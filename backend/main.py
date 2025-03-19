@@ -8,14 +8,14 @@ from backend.websocket import ws_manager
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
-tables = {0: Table(10, 420)}
+tables: dict[int, Table] = {0: Table(10, 420)}
 
 
 @app.websocket("/ws/join/{tableId}/{wsId}")
 async def joinTable(websocket: WebSocket, tableId: str, wsId: str):
     await ws_manager.connect(websocket)
 
-    tables.add_player(wsId, 1000)
+    tables[0].add_player(wsId, 1000)
     await ws_manager.broadcast("Player joined", "join")
 
 
