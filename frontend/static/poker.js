@@ -11,6 +11,8 @@ betting.onmessage = function (event) {
 
 function action(value) {
     var msg = value.toString()
+
     console.log(msg)
+
     betting.send(msg)
 }

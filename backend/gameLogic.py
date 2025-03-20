@@ -8,7 +8,7 @@ class Table:
     tableId: int = 0
 
     def __init__(self, min_bet: int):
-        Table.tableId = Table.tableId % 1e9
+        Table.tableId = Table.tableId % int(1e9)
         self.tableId: int = Table.tableId
         self.community_cards: list[str] = []
         self.last_bet: int = 0
@@ -98,6 +98,9 @@ class Table:
         self.active_players = list(range(self.player_num))
         self.current_player = self.small_blind
         self.deal_community_cards()
+
+    def get_current_player(self):
+        return self.player_order[self.current_player]
 
     async def next_player(self):
         self.current_player = self.active_players[self.active_players.index(self.current_player) + 1]
