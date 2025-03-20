@@ -15,9 +15,17 @@ tables: dict[int, Table] = {0: Table(10)}
 async def joinTable(websocket: WebSocket, tableId: str, wsId: str):
     await ws_manager.connect(websocket)
 
-    buyIn = websocket.iter_json()["buyIn"]
-    tables[tableId].add_player(wsId, buyIn)
-    await ws_manager.broadcast("Player joined", "join")
+    async def joinPlayer(websocket: WebSocket):
+        print(websocket.iter_text())
+        async for cmd in websocket.iter_json():
+            print(cmd, "\n")
+
+        buyIn = websocket["buyIn"]
+        tables[tableId].add_player(wsId, buyIn)
+
+        await ws_manager.broadcast("Player joined", "join")
+
+    await joinPlayer(websocket)
 
 
 @app.websocket("/ws/betting/{tableId}/{wsId}")
