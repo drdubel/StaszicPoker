@@ -11,9 +11,9 @@ function getCookies() {
 
 wsId = getCookies()['wsId']
 
-function createGame(minBet) {
+function createGame(tableName, minBet) {
     var ws = new WebSocket("ws://127.0.0.1:5000/ws/create/" + wsId)
-    var msg = JSON.stringify({ "minBet": minBet })
+    var msg = JSON.stringify({ "tableName": tableName, "minBet": minBet })
 
     ws.onopen = function () {
         ws.send(msg);

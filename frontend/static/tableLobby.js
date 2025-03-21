@@ -15,7 +15,12 @@ gameId = 0
 var ws = new WebSocket("ws://127.0.0.1:5000/ws/start/" + gameId)
 
 ws.onmessage = function (event) {
-    window.location.href = "http://127.0.0.1:8000/poker/" + gameId
+    var msg = JSON.parse(event.data)
+    console.log(msg)
+
+    if (msg == "0") {
+        window.location.href = "http://127.0.0.1:8000/poker/" + gameId
+    }
 }
 
 function startGame() {

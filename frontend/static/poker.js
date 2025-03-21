@@ -17,7 +17,11 @@ betting.onmessage = function (event) {
     var msg = JSON.parse(event.data)
     console.info(msg)
 
-    document.getElementById("currentBet").innerHTML = msg;
+    if (msg == "S") {
+        document.getElementById("currentPlayer").innerHTML = "Your Turn"
+    } else {
+        document.getElementById("currentBet").innerHTML = msg
+    }
 }
 
 function action(value) {
@@ -26,4 +30,5 @@ function action(value) {
     console.log(msg)
 
     betting.send(msg)
+    document.getElementById("currentPlayer").innerHTML = "Not your turn"
 }

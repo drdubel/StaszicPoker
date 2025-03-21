@@ -71,13 +71,8 @@ async def auth(request: Request):
 
 
 @app.get("/logout")
-async def logout(request: Request, response: Response, access_token: Optional[str] = Cookie(None)):
-    access_cookies.pop(access_token)
-    with open("turbacz/data/cookies.pickle", "wb") as cookies:
-        dump(access_cookies, cookies)
-    request.session.pop("user", None)
-    response.delete_cookie(key="access_token")
-    return RedirectResponse(url="/")
+async def logout():
+    return RedirectResponse(url="http://127.0.0.1:5000/logout")
 
 
 if __name__ == "__main__":

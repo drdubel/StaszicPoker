@@ -6,7 +6,7 @@ from secrets import token_urlsafe
 from typing import Optional
 
 from authlib.integrations.starlette_client import OAuth, OAuthError
-from fastapi import Cookie, FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import Cookie, FastAPI, WebSocket, WebSocketDisconnect, Response
 from starlette.config import Config
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.requests import Request
@@ -61,6 +61,19 @@ async def auth(request: Request):
         return response
 
 
+@app.get("/logout")
+async def logout(request: Request, response: Response, access_token: Optional[str] = Cookie(None)):
+    access_cookies.pop(access_token)
+
+    with open("backend/data/cookies.pickle", "wb") as cookies:
+        dump(access_cookies, cookies)
+
+    request.session.pop("user", None)
+    response.delete_cookie(key="access_token")
+
+    return RedirectResponse(url="http://127.0.0.1:8000/")
+
+
 @app.websocket("/ws/join/{tableId}/{wsId}")
 async def joinTable(websocket: WebSocket, tableId: int, wsId: str, access_token: Optional[str] = Cookie(None)):
     await ws_manager.connect(websocket)
@@ -91,12 +104,18 @@ async def joinTable(websocket: WebSocket, tableId: int, wsId: str, access_token:
 async def createTable(websocket: WebSocket):
     await ws_manager.connect(websocket)
 
-    message = await websocket.receive_text()
-    message = json.loads(message)
+    try:
+        message = await websocket.receive_text()
+        message = json.loads(message)
 
-    tables[int((Table.tableId - 1) % 1e9)] = Table(message["minBet"])
+        tables[Table.tableId - 1] = Table(message["minBet"])
 
-    await ws_manager.broadcast("Table created", "create")
+        await ws_manager.broadcast("created", "create")
+
+    except WebSocketDisconnect:
+        print("Player disconnected")
+
+        ws_manager.disconnect(websocket)
 
 
 @app.websocket("/ws/start/{tableId}")
@@ -108,10 +127,15 @@ async def startTable(websocket: WebSocket, tableId: int):
         print(message)
 
         if message == "start":
-            if tableId in tables:
-                tables[tableId].new_round()
+            if tableId in tables and tables[tableId].player_num > 1:
+                await ws_manager.broadcast("0", "start")
 
-            await ws_manager.broadcast("0", "start")
+                await tables[tableId].new_round()
+
+            else:
+                print("Table not found")
+
+                await ws_manager.broadcast("-1", "start")
 
     except WebSocketDisconnect:
         print("Player disconnected")
