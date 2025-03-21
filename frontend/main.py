@@ -1,8 +1,7 @@
 from pickle import dump, load
-from secrets import token_urlsafe
 from typing import Optional
 
-from authlib.integrations.starlette_client import OAuth, OAuthError
+from authlib.integrations.starlette_client import OAuth
 from fastapi import Cookie, FastAPI, Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -34,6 +33,7 @@ with open("data/cookies.pickle", "rb") as cookies:
 @app.get("/")
 async def homepage(request: Request, access_token: Optional[str] = Cookie(None)):
     user = request.session.get("user")
+    print(access_cookies)
 
     if access_token in access_cookies:
         return RedirectResponse(url="/lobby")
@@ -45,44 +45,29 @@ async def homepage(request: Request, access_token: Optional[str] = Cookie(None))
 
 
 @app.get("/lobby")
-async def lobby(request: Request, access_token: Optional[str] = Cookie(None)):
-    user = request.session.get("user")
-
-    if user and access_token in access_cookies:
-        return FileResponse("static/lobby.html")
-
-    return RedirectResponse(url="/")
+async def lobby(request: Request):
+    return FileResponse("static/lobby.html")
 
 
-@app.get("/poker")
-async def rooms(request: Request):
+@app.get("/tableLobby/{tableId}")
+async def tableLobby(request: Request, tableId: int):
+    return FileResponse("static/tableLobby.html")
+
+
+@app.get("/poker/{tableId}")
+async def rooms(request: Request, tableId: int):
     return FileResponse("static/poker.html")
 
 
 @app.get("/login")
 async def login(request: Request):
-    redirect_uri = request.url_for("auth")
+    redirect_uri = "http://127.0.0.1:5000/auth"
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 
 @app.get("/auth")
 async def auth(request: Request):
-    try:
-        token = await oauth.google.authorize_access_token(request)
-    except OAuthError as error:
-        return HTMLResponse(f"<h1>{error.error}</h1>")
-    user = token.get("userinfo")
-    if user:
-        request.session["user"] = dict(user)
-        access_token = token_urlsafe()
-        access_cookies[access_token] = user["email"]
-
-        with open("data/cookies.pickle", "wb") as cookies:
-            dump(access_cookies, cookies)
-
-        response = RedirectResponse(url="/lobby")
-        response.set_cookie("access_token", access_token, max_age=3600 * 24 * 14)
-        return response
+    return FileResponse("static/poker.html")
 
 
 @app.get("/logout")

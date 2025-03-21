@@ -103,20 +103,36 @@ class Table:
         return self.player_order[self.current_player]
 
     async def next_player(self):
+        print(self.current_player)
         self.current_player = self.active_players[self.active_players.index(self.current_player) + 1]
+        print(self.current_player)
 
         if self.current_player == self.last_bet:
             if self.game_stage == 0 and self.current_player == self.big_blind:
-                await ws_manager.broadcast("cmd", f"betting/{self.tableId}")
+                print("next player")
+                await ws_manager.broadcast(self.current_player, f"betting/{self.tableId}")
 
             else:
+                print("next stage")
                 self.next_stage()
 
-    def action(self, player: str, action: str, bet: int = 0):
+        else:
+            print("next player")
+            await ws_manager.broadcast(self.current_player, f"betting/{self.tableId}")
+
+    async def action(self, player: str, bet: int = 0):
         if player != self.player_order[self.current_player]:
             print("Not your turn")
 
             return False
+
+        match bet:
+            case 0:
+                action = "check"
+            case -1:
+                action = "fold"
+            case _:
+                action = "bet"
 
         if action == "bet":
             if bet < self.current_bet or bet % self.min_bet != 0 or bet < self.current_bet - self.prev_bet:
@@ -146,4 +162,5 @@ class Table:
         elif action == "fold":
             self.active_players.remove(self.player_order.index(player))
 
-        self.next_player()
+        await ws_manager.broadcast(bet, f"betting/{self.tableId}")
+        await self.next_player()

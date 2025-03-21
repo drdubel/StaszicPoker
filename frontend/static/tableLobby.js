@@ -1,0 +1,24 @@
+function getCookies() {
+    var cookies = document.cookie.split(';')
+    var cookieDict = {}
+    for (var i = 0; i < cookies.length; i++) {
+        var cookie = cookies[i].split('=')
+        cookieDict[cookie[0].trim()] = cookie[1]
+    }
+    return cookieDict
+}
+
+
+wsId = getCookies()['wsId']
+gameId = 0
+
+var ws = new WebSocket("ws://127.0.0.1:5000/ws/start/" + gameId)
+
+ws.onmessage = function (event) {
+    window.location.href = "http://127.0.0.1:8000/poker/" + gameId
+}
+
+function startGame() {
+    var msg = "start"
+    ws.send(msg);
+}

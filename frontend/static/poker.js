@@ -1,4 +1,15 @@
-var wsId = Math.floor(Math.random() * 2000000000)
+function getCookies() {
+    var cookies = document.cookie.split(';')
+    var cookieDict = {}
+    for (var i = 0; i < cookies.length; i++) {
+        var cookie = cookies[i].split('=')
+        cookieDict[cookie[0].trim()] = cookie[1]
+    }
+    return cookieDict
+}
+
+
+wsId = getCookies()['wsId']
 var betting = new WebSocket("ws://127.0.0.1:5000/ws/betting/0/" + wsId)
 
 
