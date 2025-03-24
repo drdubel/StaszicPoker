@@ -11,16 +11,40 @@ function getCookies() {
 
 wsId = getCookies()['wsId']
 var betting = new WebSocket("ws://127.0.0.1:5000/ws/betting/0/" + wsId)
+var yourId
+document.getElementById("currentBet").innerHTML = 0
+document.getElementById("currentPot").innerHTML = 0
 
 
 betting.onmessage = function (event) {
     var msg = JSON.parse(event.data)
     console.info(msg)
 
-    if (msg == "S") {
-        document.getElementById("currentPlayer").innerHTML = "Your Turn"
+    if (Array.isArray(msg)) {
+        console.log(msg, msg.length)
+
+        if (msg.length == 5)
+            for (let i = 1; i <= msg.length; i++)
+                document.getElementById("card" + i.toString()).src = "/static/cards/" + msg[i - 1] + ".png"
+        else
+            for (let i = 1; i <= msg.length; i++)
+                document.getElementById("playerCard" + i.toString()).src = "/static/cards/" + msg[i - 1] + ".png"
+
     } else {
-        document.getElementById("currentBet").innerHTML = msg
+        if (msg[0] == "B") {
+            document.getElementById("currentBet").innerHTML = msg.substring(1)
+        } else if (msg[0] == "P") {
+            document.getElementById("currentPot").innerHTML = msg.substring(1)
+        } else if (msg[0] == "G") {
+            if (msg.substring(1) == yourId)
+                document.getElementById("currentPlayer").innerHTML = "Your turn"
+            else
+                document.getElementById("currentPlayer").innerHTML = msg.substring(1)
+        } else if (msg[0] == "C") {
+            document.getElementById("currentChips").innerHTML = msg.substring(1)
+        } else if (msg[0] == "Y") {
+            yourId = msg.substring(1)
+        }
     }
 }
 

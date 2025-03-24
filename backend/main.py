@@ -7,6 +7,7 @@ from typing import Optional
 
 from authlib.integrations.starlette_client import OAuth, OAuthError
 from fastapi import Cookie, FastAPI, WebSocket, WebSocketDisconnect, Response
+from reflex import table
 from starlette.config import Config
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.requests import Request
@@ -130,8 +131,6 @@ async def startTable(websocket: WebSocket, tableId: int):
             if tableId in tables and tables[tableId].player_num > 1:
                 await ws_manager.broadcast("0", "start")
 
-                await tables[tableId].new_round()
-
             else:
                 print("Table not found")
 
@@ -148,6 +147,17 @@ async def websocket_betting(websocket: WebSocket, tableId: int, wsId: str):
     await ws_manager.connect(websocket)
 
     try:
+        if tableId in tables:
+            if not tables[tableId].started:
+                await ws_manager.broadcast(f"Y{tables[tableId].player_order.index(wsId)}", f"betting/{tableId}/{wsId}")
+
+            if not tables[tableId].started and tables[tableId].player_num == len(
+                [x for x in ws_manager.active_connections if f"/ws/betting/{tableId}" in x.url.path]
+            ):
+                await tables[tableId].new_round()
+
+                tables[tableId].started = True
+
         while websocket:
             message = await websocket.receive_text()
             print(tables[tableId].get_current_player(), wsId)

@@ -1,5 +1,4 @@
 from random import sample
-import time
 
 from backend.consts import cards
 from backend.websocket import ws_manager
@@ -11,25 +10,26 @@ class Table:
     def __init__(self, min_bet: int):
         Table.tableId = Table.tableId % int(1e18)
         self.tableId: int = Table.tableId
-        self.community_cards: list[str] = []
+        self.community_cards: list[str] = ["CB" for _ in range(5)]
         self.last_bet: int = 0
         self.first_to_act: int = 0
         self.dealer: int = 0
         self.small_blind: int = 0
         self.big_blind: int = 0
-        self.deck_of_cards: list[str] = cards
+        self.deck_of_cards: list[str] = cards.copy()
         self.game_stage: int = 0
         self.current_player: int = 0
         self.player_num: int = 0
         self.player_bets: dict[str, int] = {}
         self.player_cards: dict[str, list[str]] = {}
-        self.player_stacks: dict[str, int] = {}
+        self.player_chips: dict[str, int] = {}
         self.player_order: list[str] = []
-        self.active_players: list[int] = []
+        self.active_players: list[str] = []
         self.pot: int = 0
         self.min_bet: int = min_bet
         self.prev_bet: int = 0
         self.current_bet: int = 0
+        self.started: bool = False
 
         Table.tableId += 1
 
@@ -37,45 +37,59 @@ class Table:
         self.player_cards[player] = []
         self.player_bets[player] = 0
         self.player_order.append(player)
-        self.player_stacks[player] = buyIn
+        self.player_chips[player] = buyIn
         self.player_num += 1
 
     def remove_player(self, player: str):
         del self.player_cards[player]
         del self.player_bets[player]
-        del self.player_stacks[player]
+        del self.player_chips[player]
         self.player_order.remove(player)
         self.player_num -= 1
 
     def refill_deck(self):
-        self.deck_of_cards = cards
+        self.deck_of_cards = cards.copy()
 
-    def deal_cards(self):
-        for player in self.player_cards.keys():
-            self.player_cards[player] = sample(cards, 2)
+    async def deal_cards(self):
+        for i, player in enumerate(self.player_order):
+            self.player_cards[player] = sample(self.deck_of_cards, 2)
 
-            cards.remove(self.player_cards[player][0])
-            cards.remove(self.player_cards[player][1])
+            self.deck_of_cards.remove(self.player_cards[player][0])
+            self.deck_of_cards.remove(self.player_cards[player][1])
 
-    def deal_community_cards(self):
+            print(self.player_cards[player])
+            await ws_manager.broadcast(self.player_cards[player], f"betting/{self.tableId}/{self.player_order[i]}")
+
+    async def deal_community_cards(self):
         match self.game_stage:
             case 0:
-                self.community_cards = sample(cards, 3)
-                cards.remove(self.community_cards[0])
-                cards.remove(self.community_cards[1])
-                cards.remove(self.community_cards[2])
+                for i, card in enumerate(sample(self.deck_of_cards, 3)):
+                    self.community_cards[i] = card
+
+                self.deck_of_cards.remove(self.community_cards[0])
+                self.deck_of_cards.remove(self.community_cards[1])
+                self.deck_of_cards.remove(self.community_cards[2])
+
             case 1:
-                self.community_cards.append(sample(cards, 1))
-                cards.remove(self.community_cards[3])
+                self.community_cards[3] = sample(self.deck_of_cards, 1)[0]
+
+                self.deck_of_cards.remove(self.community_cards[3])
+
             case 2:
-                self.community_cards.append(sample(cards, 1))
-                cards.remove(self.community_cards[4])
+                self.community_cards[4] = sample(self.deck_of_cards, 1)[0]
+
+                self.deck_of_cards.remove(self.community_cards[4])
+
+        print(self.community_cards)
+        await ws_manager.broadcast(self.community_cards, f"betting/{self.tableId}")
 
     async def new_round(self):
         self.refill_deck()
-        self.deal_cards()
+        await self.deal_cards()
+
+        self.community_cards = ["CB" for _ in range(5)]
         self.player_bets = {player: 0 for player in self.player_cards.keys()}
-        self.active_players = list(range(self.player_num))
+        self.active_players = self.player_order
         self.current_bet = 2 * self.min_bet
         self.prev_bet = 0
         self.pot = 0
@@ -89,41 +103,47 @@ class Table:
         self.player_bets[self.player_order[self.small_blind]] = self.min_bet
         self.player_bets[self.player_order[self.big_blind]] = 2 * self.min_bet
 
-        url = f"betting/{self.tableId}/{self.player_order[self.current_player]}"
-
-        print([connection.url.path for connection in ws_manager.active_connections])
-
         print("dzialaaa")
-        await ws_manager.broadcast("S", url)
+        for player in self.player_order:
+            await ws_manager.broadcast(f"C{self.player_chips[player]}", f"betting/{self.tableId}/{player}")
+
+        await ws_manager.broadcast(f"G{self.current_player}", f"betting/{self.tableId}")
+        await ws_manager.broadcast(self.community_cards, f"betting/{self.tableId}")
 
     async def next_stage(self):
-        self.game_stage += 1
+        if self.game_stage == 2:
+            await self.new_round()
+
+            return
+
         self.current_bet = 0
         self.prev_bet = 0
         self.last_bet = self.small_blind
-        self.first_to_act = self.active_players[0]
+        self.first_to_act = self.player_order.index(self.active_players[0])
         self.pot += sum(self.player_bets.values())
         self.player_bets = {player: 0 for player in self.player_cards.keys()}
         self.current_player = self.first_to_act
-        self.deal_community_cards()
 
-        await ws_manager.broadcast("S", f"betting/{self.tableId}/{self.player_order[self.current_player]}")
+        await self.deal_community_cards()
+        self.game_stage += 1
 
     def get_current_player(self):
         return self.player_order[self.current_player]
 
     async def next_player(self):
-        self.current_player = self.active_players[
-            (self.active_players.index(self.current_player) + 1) % len(self.active_players)
-        ]
+        self.current_player = self.player_order.index(
+            self.active_players[(self.current_player + 1) % len(self.active_players)]
+        )
 
         if self.current_player == self.last_bet:
             print("next stage")
-            self.next_stage()
+            await self.next_stage()
 
         else:
             print("next player")
-            await ws_manager.broadcast("S", f"betting/{self.tableId}/{self.player_order[self.current_player]}")
+
+        await ws_manager.broadcast(f"G{self.current_player}", f"betting/{self.tableId}")
+        await ws_manager.broadcast(f"P{self.pot}", f"betting/{self.tableId}")
 
     async def action(self, player: str, bet: int = 0):
         if player != self.player_order[self.current_player]:
@@ -147,7 +167,7 @@ class Table:
 
                     return False
 
-                if bet > self.player_stacks[player]:
+                if bet > self.player_chips[player]:
                     print("Not enough money!")
 
                     return False
@@ -156,9 +176,14 @@ class Table:
                     self.last_bet = self.current_player
 
                 self.player_bets[player] = bet
-                self.player_stacks[player] -= bet
+                self.player_chips[player] -= bet
                 self.prev_bet = self.current_bet
                 self.current_bet = bet
 
-        await ws_manager.broadcast(bet, f"betting/{self.tableId}")
+                await ws_manager.broadcast(
+                    f"C{self.player_chips[self.player_order[self.current_player]]}",
+                    f"betting/{self.tableId}/{self.player_order[self.current_player]}",
+                )
+
+        await ws_manager.broadcast(f"B{bet}", f"betting/{self.tableId}")
         await self.next_player()

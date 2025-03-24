@@ -1,8 +1,5 @@
-from pickle import dump, load
-from typing import Optional
-
 from authlib.integrations.starlette_client import OAuth
-from fastapi import Cookie, FastAPI, Response
+from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.config import Config
@@ -26,36 +23,23 @@ oauth.register(
 )
 
 
-with open("data/cookies.pickle", "rb") as cookies:
-    access_cookies: dict = load(cookies)
-
-
 @app.get("/")
-async def homepage(request: Request, access_token: Optional[str] = Cookie(None)):
-    user = request.session.get("user")
-    print(access_cookies)
-
-    if access_token in access_cookies:
-        return RedirectResponse(url="/lobby")
-
-    if user:
-        return HTMLResponse('<h1>Sio!</h1><a href="/login">login</a>')
-
+async def homepage():
     return HTMLResponse('<a href="/login">login</a>')
 
 
 @app.get("/lobby")
-async def lobby(request: Request):
+async def lobby():
     return FileResponse("static/lobby.html")
 
 
 @app.get("/tableLobby/{tableId}")
-async def tableLobby(request: Request, tableId: int):
+async def tableLobby():
     return FileResponse("static/tableLobby.html")
 
 
 @app.get("/poker/{tableId}")
-async def rooms(request: Request, tableId: int):
+async def rooms():
     return FileResponse("static/poker.html")
 
 
