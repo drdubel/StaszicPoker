@@ -6,8 +6,7 @@ from secrets import token_urlsafe
 from typing import Optional
 
 from authlib.integrations.starlette_client import OAuth, OAuthError
-from fastapi import Cookie, FastAPI, WebSocket, WebSocketDisconnect, Response
-from reflex import table
+from fastapi import Cookie, FastAPI, Response, WebSocket, WebSocketDisconnect
 from starlette.config import Config
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.requests import Request
