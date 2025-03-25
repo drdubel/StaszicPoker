@@ -14,11 +14,12 @@ var betting = new WebSocket("ws://127.0.0.1:5000/ws/betting/0/" + wsId)
 var yourId
 document.getElementById("currentBet").innerHTML = 0
 document.getElementById("currentPot").innerHTML = 0
+document.getElementById("yourCurrentBet").innerHTML = 0
 
 
 betting.onmessage = function (event) {
     var msg = JSON.parse(event.data)
-    console.info(msg)
+    console.log(msg)
 
     if (Array.isArray(msg)) {
         console.log(msg, msg.length)
@@ -31,8 +32,14 @@ betting.onmessage = function (event) {
                 document.getElementById("playerCard" + i.toString()).src = "/static/cards/" + msg[i - 1] + ".png"
 
     } else {
+        console.log("hehe")
+        console.log(msg)
         if (msg[0] == "B") {
             document.getElementById("currentBet").innerHTML = msg.substring(1)
+        } else if (msg[0] == "M") {
+            console.log("hahaha")
+            console.log(msg.substring(1))
+            document.getElementById("yourCurrentBet").innerHTML = msg.substring(1)
         } else if (msg[0] == "P") {
             document.getElementById("currentPot").innerHTML = msg.substring(1)
         } else if (msg[0] == "G") {

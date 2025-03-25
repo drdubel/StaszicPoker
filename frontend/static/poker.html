@@ -32,13 +32,17 @@
         <button onclick="action(400)">Bet 400</button>
         <button onclick="action(500)">Bet 500</button>
         <button onclick="action(document.getElementById('currentChips').innerHTML)">All in</button>
-        <button onclick="action(document.getElementById('currentBet').innerHTML)">Call</button>
-        <button onclick="action(true)">Check</button>
-        <button onclick="action(false)">Fold</button>
+        <button onclick="action(document.getElementById('currentBet').innerHTML - document.getElementById('yourCurrentBet').innerHTML)">Call</button>
+        <button onclick="action(0)">Check</button>
+        <button onclick="action(-1)">Fold</button>
         <div id="message"></div>
         <h1>
             Current bet:
             <span id="currentBet"></span>
+        </h1>
+        <h1>
+            Your current bet:
+            <span id="yourCurrentBet"></span>
         </h1>
         <h1>
             Current player:
