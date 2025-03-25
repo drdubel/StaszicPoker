@@ -32,13 +32,9 @@ betting.onmessage = function (event) {
                 document.getElementById("playerCard" + i.toString()).src = "/static/cards/" + msg[i - 1] + ".png"
 
     } else {
-        console.log("hehe")
-        console.log(msg)
         if (msg[0] == "B") {
             document.getElementById("currentBet").innerHTML = msg.substring(1)
         } else if (msg[0] == "M") {
-            console.log("hahaha")
-            console.log(msg.substring(1))
             document.getElementById("yourCurrentBet").innerHTML = msg.substring(1)
         } else if (msg[0] == "P") {
             document.getElementById("currentPot").innerHTML = msg.substring(1)
