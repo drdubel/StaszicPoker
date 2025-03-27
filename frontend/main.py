@@ -40,18 +40,14 @@ async def tableLobby():
 
 @app.get("/poker/{tableId}")
 async def rooms():
-    return FileResponse("static/poker.html")
+    with open("static/poker.html") as f:
+        return HTMLResponse(f.read())
 
 
 @app.get("/login")
 async def login(request: Request):
     redirect_uri = "http://127.0.0.1:5000/auth"
     return await oauth.google.authorize_redirect(request, redirect_uri)
-
-
-@app.get("/auth")
-async def auth(request: Request):
-    return FileResponse("static/poker.html")
 
 
 @app.get("/logout")

@@ -27,7 +27,7 @@ class ConnectionManager:
             try:
                 if app in connection.url.path:
                     await connection.send_json(message)
-            except WebSocketDisconnect:
+            except Exception as e:
                 self.disconnect(connection)
                 logger.warning("removing closed connection %s", connection)
                 continue

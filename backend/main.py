@@ -153,7 +153,7 @@ async def websocket_betting(websocket: WebSocket, tableId: int, wsId: str):
             if not tables[tableId].started and tables[tableId].player_num == len(
                 [x for x in ws_manager.active_connections if f"/ws/betting/{tableId}" in x.url.path]
             ):
-                await tables[tableId].new_round()
+                await tables[tableId].next_round()
 
                 tables[tableId].started = True
 
