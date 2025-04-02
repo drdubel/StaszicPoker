@@ -208,6 +208,10 @@ class Table:
         logger.info(winning_order)
 
         self.distribute_chips(winning_order)
+
+        for player in self.player_order:
+            await ws_manager.broadcast(f"C{self.players[player].chips}", f"betting/{self.tableId}/{player}")
+
         # await ws_manager.broadcast(f"W{winning_order}", f"betting/{self.tableId}")
 
     def get_current_player(self):
