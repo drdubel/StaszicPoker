@@ -1,8 +1,12 @@
 from random import sample
 
+import structlog
+
 from backend.arbiter import arbiter
 from backend.consts import cards
 from backend.websocket import ws_manager
+
+logger = structlog.get_logger()
 
 
 class Player:
@@ -15,7 +19,7 @@ class Player:
         self.num: int = num
 
     def place_bet(self, amount: int):
-        self.bet = amount
+        self.bet += amount
         self.whole_bet += amount
         self.chips -= amount
 
@@ -74,7 +78,7 @@ class Table:
             self.deck_of_cards.remove(self.players[player].cards[0])
             self.deck_of_cards.remove(self.players[player].cards[1])
 
-            print(self.players[player].cards)
+            logger.info(self.players[player].cards)
             await ws_manager.broadcast(self.players[player].cards, f"betting/{self.tableId}/{self.player_order[i]}")
 
     async def deal_community_cards(self):
@@ -97,7 +101,7 @@ class Table:
 
                 self.deck_of_cards.remove(self.community_cards[4])
 
-        print(self.community_cards)
+        logger.info(self.community_cards)
         await ws_manager.broadcast(self.community_cards, f"betting/{self.tableId}")
 
     async def next_round(self):
@@ -141,9 +145,8 @@ class Table:
 
         self.current_bet = 0
         self.prev_bet = 0
-        self.last_bet = self.small_blind
         self.first_to_act = self.player_order.index(self.active_players[0])
-        self.pot += sum([player.bet for player in self.players.values()])
+        self.last_bet = self.first_to_act
 
         for player in self.player_order:
             self.players[player].next_stage()
@@ -159,11 +162,52 @@ class Table:
 
         self.game_stage += 1
 
+        if len(self.active_players) == 1:
+            logger.info("Only one player left!")
+            await self.end_game()
+
+            return
+
+        if self.players[self.player_order[self.current_player]].chips == 0:
+            logger.info("no chips")
+            await self.next_player()
+
+            return
+
+    def distribute_chips(self, winning_order: list[list[int]]):
+        pots = []
+
+        for place in winning_order:
+            playersW = sorted([self.player_order[player] for player in place], key=lambda x: self.players[x].whole_bet)
+
+            for playerW in playersW:
+                if len([playerL for playerL in self.players.values() if playerL.whole_bet > 0]) == 0:
+                    break
+
+                pots.append(0)
+                potMax = self.players[playerW].whole_bet
+
+                for playerL in self.players.values():
+                    pots[-1] += min(potMax, playerL.whole_bet)
+                    playerL.whole_bet = max(0, playerL.whole_bet - potMax)
+
+            for pot in pots:
+                for playerW in playersW:
+                    self.players[playerW].chips += pot // len(playersW)
+
+            if len([playerL for playerL in self.players.values() if playerL.whole_bet > 0]) == 0:
+                break
+
+        logger.info(pots)
+
     async def end_game(self):
         winning_order = arbiter({player: player.cards for player in self.players.values()}, self.community_cards)
-        print(winning_order)
+        logger.info(winning_order)
 
-        await self.next_round()
+        self.distribute_chips(winning_order)
+        # await ws_manager.broadcast(f"W{winning_order}", f"betting/{self.tableId}")
+
+        # await self.next_round()
 
     def get_current_player(self):
         return self.player_order[self.current_player]
@@ -174,34 +218,33 @@ class Table:
         )
 
         if len(self.active_players) == 1:
-            print("coooooooooooooooo!")
+            logger.info("Only one player left!")
             await self.end_game()
 
             return
 
         if self.current_player == self.last_bet:
-            print("next stage")
+            logger.info("next stage")
             await self.next_stage()
 
             return
 
         elif self.players[self.player_order[self.current_player]].chips == 0:
-            print("no chips")
+            logger.info("no chips")
             await self.next_player()
 
         await ws_manager.broadcast(f"G{self.current_player}", f"betting/{self.tableId}")
-        await ws_manager.broadcast(f"P{self.pot}", f"betting/{self.tableId}")
 
     async def action(self, player: str, bet: int = 0):
         if player != self.player_order[self.current_player]:
-            print("Not your turn")
+            logger.warning("Not your turn")
 
             return False
 
         match bet:
             case 0:
                 if self.current_bet != self.players[player].bet:
-                    print("Wrong check!")
+                    logger.warning("Wrong check!")
 
                     return False
 
@@ -209,42 +252,36 @@ class Table:
                 self.active_players.remove(self.player_order.index(player))
 
             case _:
-                if bet == self.players[player].chips + self.players[player].bet and bet < self.current_bet:
-                    self.players[player].place_bet(bet)
-                    self.pot += bet
-
-                    await self.next_player()
-
-                    return True
-
                 if (
                     bet + self.players[player].bet < self.current_bet
                     or bet % self.min_bet != 0
                     or bet + self.players[player].bet < self.current_bet - self.prev_bet
                 ):
-                    print("Wrong bet!")
+                    logger.info((self.players[player].bet, bet, self.current_bet, self.prev_bet))
+                    logger.warning("Wrong bet!")
 
                     return False
 
-                if bet + self.players[player].bet > self.players[player].chips:
-                    print("Not enough money!")
+                if bet > self.players[player].chips:
+                    logger.warning("Not enough money!")
 
                     return False
 
                 if bet + self.players[player].bet > self.current_bet:
                     self.last_bet = self.current_player
+                    self.prev_bet = self.current_bet
+                    self.current_bet = self.players[player].bet + bet
 
                 self.players[player].place_bet(bet)
                 self.pot += bet
-                self.prev_bet = self.current_bet
-                self.current_bet = self.players[player].bet
-                print(self.pot, bet, self.players[player].bet, self.current_bet)
+                logger.info((self.pot, bet, self.players[player].bet, self.players[player].whole_bet, self.current_bet))
 
                 await ws_manager.broadcast(
                     f"C{self.players[player].chips}",
                     f"betting/{self.tableId}/{player}",
                 )
+                await ws_manager.broadcast(f"M{self.players[player].bet}", f"betting/{self.tableId}/{player}")
 
-        await ws_manager.broadcast(f"B{bet}", f"betting/{self.tableId}")
-        await ws_manager.broadcast(f"M{self.players[player].bet}", f"betting/{self.tableId}/{player}")
+        await ws_manager.broadcast(f"B{self.current_bet}", f"betting/{self.tableId}")
+        await ws_manager.broadcast(f"P{self.pot}", f"betting/{self.tableId}")
         await self.next_player()

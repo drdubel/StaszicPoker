@@ -1,10 +1,10 @@
 import asyncio
-import logging
 from typing import List
 
-from fastapi import WebSocket, WebSocketDisconnect
+import structlog
+from fastapi import WebSocket
 
-logger = logging.getLogger(__name__)
+logger = structlog.getLogger(__name__)
 
 
 class ConnectionManager:
@@ -27,7 +27,7 @@ class ConnectionManager:
             try:
                 if app in connection.url.path:
                     await connection.send_json(message)
-            except Exception as e:
+            except Exception as _:
                 self.disconnect(connection)
                 logger.warning("removing closed connection %s", connection)
                 continue

@@ -1,10 +1,10 @@
 import json
-import logging
 from base64 import urlsafe_b64encode
 from pickle import dump, load
 from secrets import token_urlsafe
 from typing import Optional
 
+import structlog
 from authlib.integrations.starlette_client import OAuth, OAuthError
 from fastapi import Cookie, FastAPI, Response, WebSocket, WebSocketDisconnect
 from starlette.config import Config
@@ -15,7 +15,8 @@ from starlette.responses import HTMLResponse, RedirectResponse
 from backend.gameLogic import Table
 from backend.websocket import ws_manager
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger()
+
 
 app = FastAPI()
 app.add_middleware(SessionMiddleware, secret_key="!secret")
@@ -90,12 +91,12 @@ async def joinTable(websocket: WebSocket, tableId: int, wsId: str, access_token:
             await ws_manager.broadcast("0", "join")
 
         except KeyError:
-            print("Table not found")
+            logger.info("Table not found")
 
             await ws_manager.broadcast("-1", "join")
 
     except WebSocketDisconnect:
-        print("Player disconnected")
+        logger.info("Player disconnected")
 
         ws_manager.disconnect(websocket)
 
@@ -113,7 +114,7 @@ async def createTable(websocket: WebSocket):
         await ws_manager.broadcast("created", "create")
 
     except WebSocketDisconnect:
-        print("Player disconnected")
+        logger.info("Player disconnected")
 
         ws_manager.disconnect(websocket)
 
@@ -124,19 +125,19 @@ async def startTable(websocket: WebSocket, tableId: int):
 
     try:
         message = await websocket.receive_text()
-        print(message)
+        logger.info(message)
 
         if message == "start":
             if tableId in tables and tables[tableId].player_num > 1:
                 await ws_manager.broadcast("0", "start")
 
             else:
-                print("Table not found")
+                logger.info("Table not found")
 
                 await ws_manager.broadcast("-1", "start")
 
     except WebSocketDisconnect:
-        print("Player disconnected")
+        logger.info("Player disconnected")
 
         ws_manager.disconnect(websocket)
 
@@ -159,28 +160,18 @@ async def websocket_betting(websocket: WebSocket, tableId: int, wsId: str):
 
         while websocket:
             message = await websocket.receive_text()
-            print(tables[tableId].get_current_player(), wsId)
 
             if tableId in tables and tables[tableId].get_current_player() != wsId:
-                print("Not your turn")
+                logger.warning("Not your turn")
 
                 continue
 
             message = json.loads(message)
-            print(tableId, message)
+            logger.info((tableId, message))
 
             await tables[tableId].action(wsId, message)
 
-            if message > 0:
-                print("Bet:", message)
-
-            else:
-                if message == 0:
-                    print("Check")
-                else:
-                    print("Fold")
-
     except WebSocketDisconnect:
-        print("Player disconnected")
+        logger.info("Player disconnected")
 
         ws_manager.disconnect(websocket)

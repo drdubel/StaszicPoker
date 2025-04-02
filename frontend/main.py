@@ -7,9 +7,9 @@ from starlette.middleware.sessions import SessionMiddleware
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, RedirectResponse
 
-app = FastAPI()
+app = FastAPI(debug=True)
 app.add_middleware(SessionMiddleware, secret_key="!secret")
-app.mount("/static", StaticFiles(directory="./static", html=True), name="static")
+app.mount("/static", StaticFiles(directory="static", html=True), name="static")
 
 
 config = Config("data/.env")
