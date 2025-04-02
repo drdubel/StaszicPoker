@@ -1,4 +1,4 @@
-from backend.consts import cardValues
+from consts import cardValues
 
 
 def is_royale_flush(values: list[int], suits: list[str]):

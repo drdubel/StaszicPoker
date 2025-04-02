@@ -10,12 +10,12 @@ logger = structlog.get_logger()
 
 
 class Player:
-    def __init__(self, id: str, buyIn: int, num: int):
+    def __init__(self, Id: str, buyIn: int, num: int):
         self.cards: list[str] = []
         self.chips: int = buyIn
         self.bet: int = 0
         self.whole_bet: int = 0
-        self.id: str = id
+        self.id: str = Id
         self.num: int = num
 
     def place_bet(self, amount: int):
@@ -175,30 +175,33 @@ class Table:
             return
 
     def distribute_chips(self, winning_order: list[list[int]]):
-        pots = []
+        pot = 0
 
         for place in winning_order:
             playersW = sorted([self.player_order[player] for player in place], key=lambda x: self.players[x].whole_bet)
 
-            for playerW in playersW:
+            while playersW:
+                playerW = playersW[0]
+
                 if len([playerL for playerL in self.players.values() if playerL.whole_bet > 0]) == 0:
                     break
 
-                pots.append(0)
                 potMax = self.players[playerW].whole_bet
 
                 for playerL in self.players.values():
-                    pots[-1] += min(potMax, playerL.whole_bet)
+                    pot += min(potMax, playerL.whole_bet)
                     playerL.whole_bet = max(0, playerL.whole_bet - potMax)
 
-            for pot in pots:
                 for playerW in playersW:
                     self.players[playerW].chips += pot // len(playersW)
+
+                pot = 0
+                playersW = [playerW for playerW in playersW if self.players[playerW].whole_bet > 0]
 
             if len([playerL for playerL in self.players.values() if playerL.whole_bet > 0]) == 0:
                 break
 
-        logger.info(pots)
+        logger.info([self.players[player].chips for player in self.player_order])
 
     async def end_game(self):
         winning_order = arbiter({player: player.cards for player in self.players.values()}, self.community_cards)
@@ -206,8 +209,6 @@ class Table:
 
         self.distribute_chips(winning_order)
         # await ws_manager.broadcast(f"W{winning_order}", f"betting/{self.tableId}")
-
-        # await self.next_round()
 
     def get_current_player(self):
         return self.player_order[self.current_player]

@@ -88,12 +88,12 @@ async def joinTable(websocket: WebSocket, tableId: int, wsId: str, access_token:
         try:
             tables[tableId].add_player(wsId, buyIn)
 
-            await ws_manager.broadcast("0", "join")
+            await ws_manager.broadcast("0", f"join/{tableId}/{wsId}")
 
         except KeyError:
             logger.info("Table not found")
 
-            await ws_manager.broadcast("-1", "join")
+            await ws_manager.broadcast("-1", f"join/{tableId}/{wsId}")
 
     except WebSocketDisconnect:
         logger.info("Player disconnected")
@@ -111,7 +111,7 @@ async def createTable(websocket: WebSocket):
 
         tables[Table.tableId - 1] = Table(message["minBet"])
 
-        await ws_manager.broadcast("created", "create")
+        await ws_manager.broadcast(f"C{Table.tableId - 1}", "create")
 
     except WebSocketDisconnect:
         logger.info("Player disconnected")
@@ -129,12 +129,35 @@ async def startTable(websocket: WebSocket, tableId: int):
 
         if message == "start":
             if tableId in tables and tables[tableId].player_num > 1:
-                await ws_manager.broadcast("0", "start")
+                await ws_manager.broadcast("0", f"start/{tableId}")
 
             else:
                 logger.info("Table not found")
 
-                await ws_manager.broadcast("-1", "start")
+                await ws_manager.broadcast("-1", f"start/{tableId}")
+
+    except WebSocketDisconnect:
+        logger.info("Player disconnected")
+
+        ws_manager.disconnect(websocket)
+
+
+@app.websocket("/ws/nextRound/{tableId}")
+async def nextRound(websocket: WebSocket, tableId: int):
+    await ws_manager.connect(websocket)
+
+    try:
+        message = await websocket.receive_text()
+        logger.info(message)
+
+        if message == "nextRound":
+            if tableId in tables:
+                await ws_manager.broadcast("0", f"nextRound/{tableId}")
+
+            else:
+                logger.info("Table not found")
+
+                await ws_manager.broadcast("-1", f"nextRound/{tableId}")
 
     except WebSocketDisconnect:
         logger.info("Player disconnected")
@@ -148,12 +171,10 @@ async def websocket_betting(websocket: WebSocket, tableId: int, wsId: str):
 
     try:
         if tableId in tables:
-            if not tables[tableId].started:
-                await ws_manager.broadcast(f"Y{tables[tableId].player_order.index(wsId)}", f"betting/{tableId}/{wsId}")
-
             if not tables[tableId].started and tables[tableId].player_num == len(
                 [x for x in ws_manager.active_connections if f"/ws/betting/{tableId}" in x.url.path]
             ):
+                await ws_manager.broadcast(f"Y{tables[tableId].player_order.index(wsId)}", f"betting/{tableId}/{wsId}")
                 await tables[tableId].next_round()
 
                 tables[tableId].started = True
