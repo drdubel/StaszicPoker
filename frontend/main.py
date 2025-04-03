@@ -9,10 +9,10 @@ from starlette.responses import HTMLResponse, RedirectResponse
 
 app = FastAPI(debug=True)
 app.add_middleware(SessionMiddleware, secret_key="!secret")
-app.mount("/static", StaticFiles(directory="static", html=True), name="static")
+app.mount("/static", StaticFiles(directory="frontend/static", html=True), name="static")
 
 
-config = Config("data/.env")
+config = Config("frontend/data/.env")
 oauth = OAuth(config)
 
 CONF_URL = "https://accounts.google.com/.well-known/openid-configuration"
@@ -30,18 +30,17 @@ async def homepage():
 
 @app.get("/lobby")
 async def lobby():
-    return FileResponse("static/lobby.html")
+    return FileResponse("frontend/static/lobby.html")
 
 
 @app.get("/tableLobby/{tableId}")
 async def tableLobby():
-    return FileResponse("static/tableLobby.html")
+    return FileResponse("frontend/static/tableLobby.html")
 
 
 @app.get("/poker/{tableId}")
 async def rooms():
-    with open("static/poker.html") as f:
-        return HTMLResponse(f.read())
+    return FileResponse("frontend/static/poker.html")
 
 
 @app.get("/login")
