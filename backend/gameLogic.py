@@ -159,6 +159,7 @@ class Table:
             await ws_manager.broadcast(f"M{self.players[player].bet}", f"betting/{self.tableId}/{player}")
 
         await ws_manager.broadcast(f"B{self.current_bet}", f"betting/{self.tableId}")
+        await ws_manager.broadcast(f"G{self.current_player}", f"betting/{self.tableId}")
 
         self.game_stage += 1
 
@@ -204,7 +205,9 @@ class Table:
         logger.info([self.players[player].chips for player in self.player_order])
 
     async def end_game(self):
-        winning_order = arbiter({player: player.cards for player in self.players.values()}, self.community_cards)
+        winning_order = arbiter(
+            {self.players[player]: self.players[player].cards for player in self.active_players}, self.community_cards
+        )
         logger.info(winning_order)
 
         self.distribute_chips(winning_order)
@@ -226,19 +229,16 @@ class Table:
             logger.info("Only one player left!")
             await self.end_game()
 
-            return
-
-        if self.current_player == self.last_bet:
+        elif self.current_player == self.last_bet:
             logger.info("next stage")
             await self.next_stage()
-
-            return
 
         elif self.players[self.player_order[self.current_player]].chips == 0:
             logger.info("no chips")
             await self.next_player()
 
-        await ws_manager.broadcast(f"G{self.current_player}", f"betting/{self.tableId}")
+        else:
+            await ws_manager.broadcast(f"G{self.current_player}", f"betting/{self.tableId}")
 
     async def action(self, player: str, bet: int = 0):
         if player != self.player_order[self.current_player]:

@@ -171,10 +171,12 @@ async def websocket_betting(websocket: WebSocket, tableId: int, wsId: str):
 
     try:
         if tableId in tables:
+            if not tables[tableId].started:
+                await ws_manager.broadcast(f"Y{tables[tableId].player_order.index(wsId)}", f"betting/{tableId}/{wsId}")
+
             if not tables[tableId].started and tables[tableId].player_num == len(
                 [x for x in ws_manager.active_connections if f"/ws/betting/{tableId}" in x.url.path]
             ):
-                await ws_manager.broadcast(f"Y{tables[tableId].player_order.index(wsId)}", f"betting/{tableId}/{wsId}")
                 await tables[tableId].next_round()
 
                 tables[tableId].started = True

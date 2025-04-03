@@ -39,9 +39,6 @@ betting.onmessage = function (event) {
         } else if (msg[0] == "P") {
             document.getElementById("currentPot").innerHTML = msg.substring(1)
         } else if (msg[0] == "G") {
-            console.log("coss")
-            console.log(yourId)
-            console.log(msg.substring(1))
             if (msg.substring(1) == yourId)
                 document.getElementById("currentPlayer").innerHTML = "Your turn"
             else
@@ -58,8 +55,6 @@ function action(value) {
     var msg = value.toString()
 
     console.log(msg)
-    console.log("currentPlayer")
 
-    document.getElementById("currentPlayer").innerHTML = "Not your turn"
     betting.send(msg)
 }
