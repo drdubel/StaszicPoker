@@ -1,0 +1,8 @@
+structlog
+uvicorn
+fastapi
+pydantic
+httpx
+authlib
+itsdangerous
+websockets
