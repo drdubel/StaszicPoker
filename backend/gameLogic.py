@@ -205,17 +205,37 @@ class Table:
         logger.info([self.players[player].chips for player in self.player_order])
 
     async def end_game(self):
-        winning_order = arbiter(
-            {self.players[player]: self.players[player].cards for player in self.active_players}, self.community_cards
-        )
-        logger.info(winning_order)
+        if len(self.active_players) == 1:
+            logger.info("Only one player left!")
 
-        self.distribute_chips(winning_order)
+            self.players[self.active_players[0]].chips += self.pot
+
+        else:
+            winning_order = arbiter(
+                {self.players[player]: self.players[player].cards for player in self.active_players},
+                self.community_cards,
+            )
+
+            logger.info(winning_order)
+
+            self.distribute_chips(winning_order)
 
         for player in self.player_order:
             await ws_manager.broadcast(f"C{self.players[player].chips}", f"betting/{self.tableId}/{player}")
 
-        # await ws_manager.broadcast(f"W{winning_order}", f"betting/{self.tableId}")
+        await ws_manager.broadcast(f"E{winning_order}", f"betting/{self.tableId}")
+
+        to_remove = []
+        for player in self.players.values():
+            if player.chips == 0:
+                await ws_manager.broadcast(f"X{player.id}", f"betting/{self.tableId}")
+                to_remove.append(player.id)
+
+        for player in to_remove:
+            self.remove_player(player)
+
+        if len(self.players) < 2:
+            logger.info("Not enough players left!")
 
     def get_current_player(self):
         return self.player_order[self.current_player]
@@ -241,7 +261,7 @@ class Table:
             await ws_manager.broadcast(f"G{self.current_player}", f"betting/{self.tableId}")
 
     async def action(self, player: str, bet: int = 0):
-        if player != self.player_order[self.current_player]:
+        if player != self.player_order[self.current_player] or player not in self.active_players:
             logger.warning("Not your turn")
 
             return False
@@ -254,7 +274,14 @@ class Table:
                     return False
 
             case -1:
-                self.active_players.remove(self.player_order.index(player))
+                self.active_players.remove(player)
+
+                if len(self.active_players) == 1:
+                    logger.info("Only one player left!")
+
+                    await self.end_game()
+
+                    return
 
             case _:
                 if (

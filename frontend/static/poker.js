@@ -27,10 +27,13 @@ betting.onmessage = function (event) {
         if (msg.length == 5)
             for (let i = 1; i <= msg.length; i++)
                 document.getElementById("card" + i.toString()).src = "/static/cards/" + msg[i - 1] + ".png"
-        else
+        else {
+            document.getElementById("winningOrderHeader").style.display = "none"
+            document.getElementById("nextRound").style.display = "none"
+
             for (let i = 1; i <= msg.length; i++)
                 document.getElementById("playerCard" + i.toString()).src = "/static/cards/" + msg[i - 1] + ".png"
-
+        }
     } else {
         if (msg[0] == "B") {
             document.getElementById("currentBet").innerHTML = msg.substring(1)
@@ -47,8 +50,23 @@ betting.onmessage = function (event) {
             document.getElementById("currentChips").innerHTML = msg.substring(1)
         } else if (msg[0] == "Y") {
             yourId = msg.substring(1)
+        } else if (msg[0] == "E") {
+            winningOrder = JSON.parse(msg.substring(1))
+            console.log(winningOrder)
+
+            document.getElementById("currentPlayer").innerHTML = "Game Over"
+            document.getElementById("currentBet").innerHTML = 0
+            document.getElementById("currentPot").innerHTML = 0
+            document.getElementById("yourCurrentBet").innerHTML = 0
+            document.getElementById("winningOrder").innerHTML = winningOrder
+            document.getElementById("winningOrderHeader").style.display = "block"
+            document.getElementById("nextRound").style.display = "block"
         }
     }
+}
+
+function nextRound() {
+    betting.send('"N"')
 }
 
 function action(value) {

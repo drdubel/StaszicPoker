@@ -85,12 +85,12 @@ async def joinTable(websocket: WebSocket, tableId: int, wsId: str, access_token:
 
         buyIn = int(message["buyIn"])
 
-        try:
+        if tableId in tables:
             tables[tableId].add_player(wsId, buyIn)
 
             await ws_manager.broadcast("0", f"join/{tableId}/{wsId}")
 
-        except KeyError:
+        else:
             logger.info("Table not found")
 
             await ws_manager.broadcast("-1", f"join/{tableId}/{wsId}")
@@ -171,6 +171,12 @@ async def websocket_betting(websocket: WebSocket, tableId: int, wsId: str):
 
     try:
         if tableId in tables:
+            if wsId not in tables[tableId].players:
+                logger.info("Player not found")
+                ws_manager.disconnect(websocket)
+
+                return
+
             if not tables[tableId].started:
                 await ws_manager.broadcast(f"Y{tables[tableId].player_order.index(wsId)}", f"betting/{tableId}/{wsId}")
 
@@ -181,20 +187,35 @@ async def websocket_betting(websocket: WebSocket, tableId: int, wsId: str):
 
                 tables[tableId].started = True
 
-        while websocket:
+        while websocket and tableId in tables and wsId in tables[tableId].players:
             message = await websocket.receive_text()
+            print(message)
+
+            message = json.loads(message)
+            logger.info((tableId, message))
+
+            if message == "N":
+                await tables[tableId].next_round()
+
+                continue
 
             if tableId in tables and tables[tableId].get_current_player() != wsId:
                 logger.warning("Not your turn")
 
                 continue
 
-            message = json.loads(message)
-            logger.info((tableId, message))
-
             await tables[tableId].action(wsId, message)
 
     except WebSocketDisconnect:
+        if tableId in tables and tables[tableId].started:
+            tables[tableId].remove_player(wsId)
+
+            if len(tables[tableId].players) < 2:
+                del tables[tableId]
+
+            else:
+                await ws_manager.broadcast(f"Y{tables[tableId].player_order.index(wsId)}", f"betting/{tableId}/{wsId}")
+
         logger.info("Player disconnected")
 
         ws_manager.disconnect(websocket)

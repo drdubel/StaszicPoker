@@ -16,6 +16,7 @@
         padding: 10px 20px;
         font-size: 16px;
         cursor: pointer;
+        text-align: center;
     }
     #message {
         margin-top: 20px;
@@ -102,6 +103,11 @@
                 width="125"
             >
         </div>
+        <h1 id="winningOrderHeader" style="display: none;">
+            Winning order:
+            <span id="winningOrder"></span>
+        </h1>
+        <button id="nextRound" style="display: none;" onclick="nextRound()">Next Round</button>
         <script src="/static/poker.js"></script>
     </body>
 </html>
