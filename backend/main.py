@@ -75,32 +75,6 @@ async def logout(request: Request, response: Response, access_token: Optional[st
     return RedirectResponse(url="http://127.0.0.1:8000/")
 
 
-@app.websocket("/ws/join/{tableId}/{wsId}")
-async def joinTable(websocket: WebSocket, tableId: int, wsId: str, access_token: Optional[str] = Cookie(None)):
-    await ws_manager.connect(websocket)
-
-    try:
-        message = await websocket.receive_text()
-        message = json.loads(message)
-
-        buyIn = int(message["buyIn"])
-
-        if tableId in tables:
-            tables[tableId].add_player(wsId, buyIn)
-
-            await ws_manager.broadcast("0", f"join/{tableId}/{wsId}")
-
-        else:
-            logger.info("Table not found")
-
-            await ws_manager.broadcast("-1", f"join/{tableId}/{wsId}")
-
-    except WebSocketDisconnect:
-        logger.info("Player disconnected")
-
-        ws_manager.disconnect(websocket)
-
-
 @app.websocket("/ws/create/{wsId}")
 async def createTable(websocket: WebSocket):
     await ws_manager.connect(websocket)
@@ -119,8 +93,8 @@ async def createTable(websocket: WebSocket):
         ws_manager.disconnect(websocket)
 
 
-@app.websocket("/ws/start/{tableId}")
-async def startTable(websocket: WebSocket, tableId: int):
+@app.websocket("/ws/start/{tableId}/{wsId}")
+async def startTable(websocket: WebSocket, tableId: int, wsId: str):
     await ws_manager.connect(websocket)
 
     try:
@@ -129,12 +103,50 @@ async def startTable(websocket: WebSocket, tableId: int):
 
         if message == "start":
             if tableId in tables and tables[tableId].player_num > 1:
+                print(tables[tableId].player_num)
                 await ws_manager.broadcast("0", f"start/{tableId}")
 
             else:
                 logger.info("Table not found")
 
                 await ws_manager.broadcast("-1", f"start/{tableId}")
+
+    except WebSocketDisconnect:
+        logger.info("Player disconnected")
+
+        if tableId in tables:
+            tables[tableId].remove_player(wsId)
+            if tables[tableId].player_num == 0:
+                del tables[tableId]
+
+        ws_manager.disconnect(websocket)
+
+
+@app.websocket("/ws/join/{tableId}/{wsId}")
+async def joinTable(websocket: WebSocket, tableId: int, wsId: str, access_token: Optional[str] = Cookie(None)):
+    await ws_manager.connect(websocket)
+
+    try:
+        message = await websocket.receive_text()
+        message = json.loads(message)
+
+        buyIn = int(message["buyIn"])
+
+        if tableId in tables:
+            if wsId in tables[tableId].players:
+                logger.info("Player already in table")
+                ws_manager.disconnect(websocket)
+
+                return
+
+            tables[tableId].add_player(wsId, buyIn)
+
+            await ws_manager.broadcast("0", f"join/{tableId}/{wsId}")
+
+        else:
+            logger.info("Table not found")
+
+            await ws_manager.broadcast("-1", f"join/{tableId}/{wsId}")
 
     except WebSocketDisconnect:
         logger.info("Player disconnected")
@@ -207,7 +219,7 @@ async def websocket_betting(websocket: WebSocket, tableId: int, wsId: str):
             await tables[tableId].action(wsId, message)
 
     except WebSocketDisconnect:
-        if tableId in tables and tables[tableId].started:
+        if tableId in tables:
             tables[tableId].remove_player(wsId)
 
             if len(tables[tableId].players) < 2:
