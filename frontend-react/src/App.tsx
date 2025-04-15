@@ -1,16 +1,17 @@
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import Lobby from "./pages/Lobby";
-import TableLobby from "./pages/TableLobby";
-import PokerTable from "./pages/PokerTable";
-import "./App.css";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Home from "./pages/Home";
+import Lobby from "./components/Lobby";
+import TableLobby from "./components/TableLobby";
+import PokerTable from "./components/PokerTable";
 
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Lobby />} />
-        <Route path="/tableLobby/:gameId" element={<TableLobby />} />
-        <Route path="/poker/:gameId" element={<PokerTable />} />
+        <Route path="/" element={<Home />} />
+        <Route path="/lobby" element={<Lobby />} />
+        <Route path="/table-lobby" element={<TableLobby />} />
+        <Route path="/poker" element={<PokerTable />} />
       </Routes>
     </Router>
   );
