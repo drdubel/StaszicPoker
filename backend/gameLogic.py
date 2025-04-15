@@ -79,7 +79,9 @@ class Table:
             self.deck_of_cards.remove(self.players[player].cards[1])
 
             logger.info(self.players[player].cards)
-            await ws_manager.broadcast(self.players[player].cards, f"betting/{self.tableId}/{self.player_order[i]}")
+            await ws_manager.broadcast(
+                f"N{self.players[player].cards}", f"betting/{self.tableId}/{self.player_order[i]}"
+            )
 
     async def deal_community_cards(self):
         match self.game_stage:
@@ -102,7 +104,7 @@ class Table:
                 self.deck_of_cards.remove(self.community_cards[4])
 
         logger.info(self.community_cards)
-        await ws_manager.broadcast(self.community_cards, f"betting/{self.tableId}")
+        await ws_manager.broadcast(f"D{self.community_cards}", f"betting/{self.tableId}")
 
     async def next_round(self):
         self.refill_deck()
@@ -113,7 +115,7 @@ class Table:
         for player in self.player_order:
             self.players[player].next_round()
 
-        self.active_players = self.player_order
+        self.active_players = self.player_order.copy()
         self.prev_bet = 0
         self.pot = 3 * self.min_bet
         self.dealer = self.small_blind
@@ -128,14 +130,16 @@ class Table:
         self.players[self.player_order[self.small_blind]].place_bet(self.min_bet)
         self.players[self.player_order[self.big_blind]].place_bet(2 * self.min_bet)
 
-        for player in self.player_order:
-            await ws_manager.broadcast(f"C{self.players[player].chips}", f"betting/{self.tableId}/{player}")
-            await ws_manager.broadcast(f"M{self.players[player].bet}", f"betting/{self.tableId}/{player}")
-
+        await ws_manager.broadcast(
+            f"C{[self.players[player].chips for player in self.player_order]}", f"betting/{self.tableId}"
+        )
+        await ws_manager.broadcast(
+            f"M{[self.players[player].bet for player in self.player_order]}", f"betting/{self.tableId}"
+        )
         await ws_manager.broadcast(f"G{self.current_player}", f"betting/{self.tableId}")
         await ws_manager.broadcast(f"B{self.current_bet}", f"betting/{self.tableId}")
         await ws_manager.broadcast(f"P{self.pot}", f"betting/{self.tableId}")
-        await ws_manager.broadcast(self.community_cards, f"betting/{self.tableId}")
+        await ws_manager.broadcast(f"D{self.community_cards}", f"betting/{self.tableId}")
 
     async def next_stage(self):
         if self.game_stage == 3:
@@ -155,8 +159,9 @@ class Table:
 
         await self.deal_community_cards()
 
-        for player in self.player_order:
-            await ws_manager.broadcast(f"M{self.players[player].bet}", f"betting/{self.tableId}/{player}")
+        await ws_manager.broadcast(
+            f"M{[self.players[player].bet for player in self.player_order]}", f"betting/{self.tableId}"
+        )
 
         await ws_manager.broadcast(f"B{self.current_bet}", f"betting/{self.tableId}")
         await ws_manager.broadcast(f"G{self.current_player}", f"betting/{self.tableId}")
@@ -209,6 +214,7 @@ class Table:
             logger.info("Only one player left!")
 
             self.players[self.active_players[0]].chips += self.pot
+            winning_order = [[self.player_order.index(self.active_players[0])]]
 
         else:
             winning_order = arbiter(
@@ -220,8 +226,12 @@ class Table:
 
             self.distribute_chips(winning_order)
 
-        for player in self.player_order:
-            await ws_manager.broadcast(f"C{self.players[player].chips}", f"betting/{self.tableId}/{player}")
+        print(self.players)
+        print(self.player_order)
+        print([self.players[player].chips for player in self.player_order])
+        await ws_manager.broadcast(
+            f"C{[self.players[player].chips for player in self.player_order]}", f"betting/{self.tableId}"
+        )
 
         await ws_manager.broadcast(f"E{winning_order}", f"betting/{self.tableId}")
 
@@ -309,10 +319,12 @@ class Table:
                 logger.info((self.pot, bet, self.players[player].bet, self.players[player].whole_bet, self.current_bet))
 
                 await ws_manager.broadcast(
-                    f"C{self.players[player].chips}",
-                    f"betting/{self.tableId}/{player}",
+                    f"C{[self.players[player].chips for player in self.player_order]}",
+                    f"betting/{self.tableId}",
                 )
-                await ws_manager.broadcast(f"M{self.players[player].bet}", f"betting/{self.tableId}/{player}")
+                await ws_manager.broadcast(
+                    f"M{[self.players[player].bet for player in self.player_order]}", f"betting/{self.tableId}"
+                )
 
         await ws_manager.broadcast(f"B{self.current_bet}", f"betting/{self.tableId}")
         await ws_manager.broadcast(f"P{self.pot}", f"betting/{self.tableId}")

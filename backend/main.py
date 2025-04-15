@@ -95,6 +95,11 @@ async def createTable(websocket: WebSocket):
 
 @app.websocket("/ws/start/{tableId}/{wsId}")
 async def startTable(websocket: WebSocket, tableId: int, wsId: str):
+    if wsId not in tables[tableId].players:
+        logger.info("Player not found")
+
+        return
+
     await ws_manager.connect(websocket)
 
     try:
@@ -113,11 +118,6 @@ async def startTable(websocket: WebSocket, tableId: int, wsId: str):
 
     except WebSocketDisconnect:
         logger.info("Player disconnected")
-
-        if tableId in tables:
-            tables[tableId].remove_player(wsId)
-            if tables[tableId].player_num == 0:
-                del tables[tableId]
 
         ws_manager.disconnect(websocket)
 
