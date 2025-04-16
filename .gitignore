@@ -2,3 +2,5 @@ _*
 .env
 *.pickle
 env
+.vscode/*
+!.vscode/extensions.json
