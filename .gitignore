@@ -4,3 +4,4 @@ _*
 env
 .vscode/*
 !.vscode/extensions.json
+secret*

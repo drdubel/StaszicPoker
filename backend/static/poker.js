@@ -10,7 +10,7 @@ function getCookies() {
 
 
 wsId = getCookies()['wsId']
-var betting = new WebSocket("ws://127.0.0.1:5000/ws/betting/0/" + wsId)
+var betting = new WebSocket("ws://127.0.0.1:8000/ws/betting/0/" + wsId)
 var yourId
 document.getElementById("currentBet").innerHTML = 0
 document.getElementById("currentPot").innerHTML = 0

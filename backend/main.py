@@ -1,5 +1,5 @@
 import json
-from base64 import urlsafe_b64encode
+from hashlib import md5
 from pickle import dump, load
 from secrets import token_urlsafe
 from typing import Optional
@@ -7,11 +7,14 @@ from typing import Optional
 import structlog
 from authlib.integrations.starlette_client import OAuth, OAuthError
 from fastapi import Cookie, FastAPI, Response, WebSocket, WebSocketDisconnect
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.config import Config
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, RedirectResponse
 
+from backend.database import Database
 from backend.gameLogic import Table
 from backend.websocket import ws_manager
 
@@ -20,6 +23,9 @@ logger = structlog.get_logger()
 
 app = FastAPI()
 app.add_middleware(SessionMiddleware, secret_key="!secret")
+app.mount("/static", StaticFiles(directory="backend/static", html=True), name="static")
+
+database = Database()
 tables: dict[int, Table] = {}
 
 config = Config("backend/data/.env")
@@ -37,6 +43,32 @@ with open("backend/data/cookies.pickle", "rb") as cookies:
     access_cookies: dict = load(cookies)
 
 
+@app.get("/")
+async def homepage():
+    return HTMLResponse('<a href="/login">login</a>')
+
+
+@app.get("/lobby")
+async def lobby():
+    return FileResponse("backend/static/lobby.html")
+
+
+@app.get("/tableLobby/{tableId}")
+async def tableLobby():
+    return FileResponse("backend/static/tableLobby.html")
+
+
+@app.get("/poker/{tableId}")
+async def rooms():
+    return FileResponse("backend/static/poker.html")
+
+
+@app.get("/login")
+async def login(request: Request):
+    redirect_uri = "http://127.0.0.1:8000/auth"
+    return await oauth.google.authorize_redirect(request, redirect_uri)
+
+
 @app.get("/auth")
 async def auth(request: Request):
     try:
@@ -48,7 +80,8 @@ async def auth(request: Request):
     if user:
         request.session["user"] = dict(user)
 
-        wsId = urlsafe_b64encode(user["email"].encode()).decode()
+        wsId = md5(user["email"].encode()).hexdigest()
+        print(wsId)
         access_token = token_urlsafe()
         access_cookies[access_token] = (user["email"], wsId)
 
@@ -83,7 +116,7 @@ async def createTable(websocket: WebSocket):
         message = await websocket.receive_text()
         message = json.loads(message)
 
-        tables[Table.tableId - 1] = Table(message["minBet"])
+        tables[Table.tableId - 1] = Table(database, message["minBet"])
 
         await ws_manager.broadcast(f"C{Table.tableId - 1}", "create")
 
@@ -94,9 +127,14 @@ async def createTable(websocket: WebSocket):
 
 
 @app.websocket("/ws/start/{tableId}/{wsId}")
-async def startTable(websocket: WebSocket, tableId: int, wsId: str):
-    if wsId not in tables[tableId].players:
-        logger.info("Player not found")
+async def startTable(websocket: WebSocket, tableId: int, wsId: str, access_token: Optional[str] = Cookie(None)):
+    if tableId not in tables or wsId not in tables[tableId].players:
+        logger.info("Player/Table not found")
+
+        return
+
+    if access_token not in access_cookies or wsId != access_cookies[access_token][1]:
+        logger.info("Player not authorized")
 
         return
 
@@ -124,6 +162,16 @@ async def startTable(websocket: WebSocket, tableId: int, wsId: str):
 
 @app.websocket("/ws/join/{tableId}/{wsId}")
 async def joinTable(websocket: WebSocket, tableId: int, wsId: str, access_token: Optional[str] = Cookie(None)):
+    if tableId not in tables:
+        logger.info("Table not found")
+
+        return
+
+    if access_token not in access_cookies or wsId != access_cookies[access_token][1]:
+        logger.info("Player not authorized")
+
+        return
+
     await ws_manager.connect(websocket)
 
     try:
@@ -132,21 +180,15 @@ async def joinTable(websocket: WebSocket, tableId: int, wsId: str, access_token:
 
         buyIn = int(message["buyIn"])
 
-        if tableId in tables:
-            if wsId in tables[tableId].players:
-                logger.info("Player already in table")
-                ws_manager.disconnect(websocket)
+        if wsId in tables[tableId].players:
+            logger.info("Player already in table")
+            ws_manager.disconnect(websocket)
 
-                return
+            return
 
-            tables[tableId].add_player(wsId, buyIn)
+        tables[tableId].add_player(wsId, buyIn)
 
-            await ws_manager.broadcast("0", f"join/{tableId}/{wsId}")
-
-        else:
-            logger.info("Table not found")
-
-            await ws_manager.broadcast("-1", f"join/{tableId}/{wsId}")
+        await ws_manager.broadcast("0", f"join/{tableId}/{wsId}")
 
     except WebSocketDisconnect:
         logger.info("Player disconnected")
@@ -178,17 +220,21 @@ async def nextRound(websocket: WebSocket, tableId: int):
 
 
 @app.websocket("/ws/betting/{tableId}/{wsId}")
-async def websocket_betting(websocket: WebSocket, tableId: int, wsId: str):
+async def websocket_betting(websocket: WebSocket, tableId: int, wsId: str, access_token: Optional[str] = Cookie(None)):
+    if tableId not in tables or wsId not in tables[tableId].players:
+        logger.info("Player/Table not found")
+
+        return
+
+    if access_token not in access_cookies or wsId != access_cookies[access_token][1]:
+        logger.info("Player not authorized")
+
+        return
+
     await ws_manager.connect(websocket)
 
     try:
         if tableId in tables:
-            if wsId not in tables[tableId].players:
-                logger.info("Player not found")
-                ws_manager.disconnect(websocket)
-
-                return
-
             if not tables[tableId].started:
                 await ws_manager.broadcast(f"Y{tables[tableId].player_order.index(wsId)}", f"betting/{tableId}/{wsId}")
 
@@ -231,3 +277,9 @@ async def websocket_betting(websocket: WebSocket, tableId: int, wsId: str):
         logger.info("Player disconnected")
 
         ws_manager.disconnect(websocket)
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="127.0.0.1", port=8000)
