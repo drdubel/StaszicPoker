@@ -8,14 +8,14 @@ function Lobby() {
     .find((row) => row.startsWith("wsId="))
     ?.split("=")[1];
 
-  const { sendMessage } = useWebSocket(`ws://127.0.0.1:8000/ws/create/${wsId}`);
+  const { sendMessage } = useWebSocket(`ws://localhost:8000/ws/create/${wsId}`);
 
   const createGame = (tableName: string, minBet: number) => {
     sendMessage({ tableName, minBet });
   };
 
   const joinGame = (gameId: number) => {
-    const ws = new WebSocket(`ws://127.0.0.1:8000/ws/join/${gameId}/${wsId}`);
+    const ws = new WebSocket(`ws://localhost:8000/ws/join/${gameId}/${wsId}`);
     ws.onopen = () => {
       ws.send(JSON.stringify({ buyIn: 1000 }));
       navigate(`/tableLobby/${gameId}`);

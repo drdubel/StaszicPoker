@@ -21,7 +21,7 @@ function Poker() {
   });
 
   const { lastMessage, sendMessage } = useWebSocket(
-    `ws://127.0.0.1:8000/ws/betting/${tableId}/${wsId}`
+    `ws://localhost:8000/ws/betting/${tableId}/${wsId}`
   );
 
   useEffect(() => {

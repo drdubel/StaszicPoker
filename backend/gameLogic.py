@@ -3,7 +3,7 @@ from random import sample
 import structlog
 
 from backend.arbiter import arbiter
-from backend.consts import cards
+from backend.data.consts import cards
 from backend.websocket import ws_manager
 
 logger = structlog.get_logger()
