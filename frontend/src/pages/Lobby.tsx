@@ -209,7 +209,7 @@ const LobbyPage: React.FC = () => {
                   </span>
                 </div>
                 <div className="flex justify-between text-slate-400">
-                  <span>Min Bet:</span>
+                  <span>Small Blind:</span>
                   <span className="text-white font-medium">
                     ${table.minBet}
                   </span>
@@ -290,7 +290,7 @@ const LobbyPage: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Minimum Bet ($)
+                  Small Blind ($)
                 </label>
                 <input
                   type="number"
@@ -301,6 +301,24 @@ const LobbyPage: React.FC = () => {
                   min="1"
                   className="w-full bg-slate-700/50 backdrop-blur border border-slate-600/50 rounded-2xl px-4 py-3 text-white focus:border-emerald-500 focus:outline-none transition-colors"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Buy-in Amount ($)
+                </label>
+                <input
+                  type="number"
+                  value={buyInAmount}
+                  onChange={(e) =>
+                    setBuyInAmount(parseInt(e.target.value) || 1000)
+                  }
+                  min="100"
+                  step="100"
+                  className="w-full bg-slate-700/50 backdrop-blur border border-slate-600/50 rounded-2xl px-4 py-3 text-white focus:border-emerald-500 focus:outline-none transition-colors"
+                />
+                <p className="text-sm text-slate-400 mt-2">
+                  Recommended: $1000 - $5000
+                </p>
               </div>
             </div>
 
