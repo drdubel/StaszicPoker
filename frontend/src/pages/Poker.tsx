@@ -170,7 +170,7 @@ const PokerPage: React.FC = () => {
         {cards.map((card, index) => (
           <img
             key={index}
-            src={`/static/cards/${card}.png`}
+            src={`/cards/${card}.png`}
             alt={`Card ${index + 1}`}
             width="125"
           />
@@ -181,7 +181,7 @@ const PokerPage: React.FC = () => {
         {playerCards.map((card, index) => (
           <img
             key={index}
-            src={`/static/cards/${card}.png`}
+            src={`/cards/${card}.png`}
             alt={`Player card ${index + 1}`}
             width="125"
           />
