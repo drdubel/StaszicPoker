@@ -1,39 +1,78 @@
-import { useNavigate, useParams } from "react-router-dom";
-import { useWebSocket } from "../hooks/useWebSocket";
-import { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 
-function TableLobby() {
-  const { tableId } = useParams();
-  const navigate = useNavigate();
-  const wsId = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith("wsId="))
-    ?.split("=")[1];
+interface Cookies {
+  [key: string]: string;
+}
 
-  const { lastMessage, sendMessage } = useWebSocket(
-    `ws://127.0.0.1:8000/ws/start/${tableId}/${wsId}`
-  );
+const TableLobby: React.FC = () => {
+  const [ws, setWs] = useState<WebSocket | null>(null);
+  const gameId = 0;
+
+  const getCookies = (): Cookies => {
+    const cookies = document.cookie.split(";");
+    const cookieDict: Cookies = {};
+
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].split("=");
+      cookieDict[cookie[0].trim()] = cookie[1];
+    }
+
+    return cookieDict;
+  };
 
   useEffect(() => {
-    if (lastMessage === "0") {
-      navigate(`/poker/${tableId}`);
-    }
-  }, [lastMessage, navigate, tableId]);
+    const wsId = getCookies()["wsId"];
+    const websocket = new WebSocket(
+      `ws://localhost:8000/ws/start/${gameId}/${wsId}`
+    );
+
+    websocket.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      console.log(msg);
+
+      if (msg === "0") {
+        window.location.href = `http://localhost:5173/poker/${gameId}`;
+      }
+    };
+
+    setWs(websocket);
+
+    return () => {
+      websocket.close();
+    };
+  }, []);
 
   const startGame = () => {
-    sendMessage("start");
+    if (ws) {
+      const msg = "start";
+      ws.send(msg);
+    }
   };
 
   return (
-    <div className="flex h-screen items-center justify-center">
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "100vh",
+        margin: 0,
+        fontFamily: "Arial, sans-serif",
+      }}
+    >
       <button
         onClick={startGame}
-        className="rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600"
+        style={{
+          margin: "10px",
+          padding: "10px 20px",
+          fontSize: "16px",
+          cursor: "pointer",
+        }}
       >
         Start Game
       </button>
     </div>
   );
-}
+};
 
 export default TableLobby;

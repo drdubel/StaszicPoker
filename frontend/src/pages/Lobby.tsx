@@ -1,43 +1,66 @@
-import { useNavigate } from "react-router-dom";
-import { useWebSocket } from "../hooks/useWebSocket";
+import React from "react";
 
-function Lobby() {
-  const navigate = useNavigate();
-  const wsId = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith("wsId="))
-    ?.split("=")[1];
-
-  const { sendMessage } = useWebSocket(`ws://127.0.0.1:8000/ws/create/${wsId}`);
-
-  const createGame = (tableName: string, minBet: number) => {
-    sendMessage({ tableName, minBet });
+const LobbyPage: React.FC = () => {
+  const getCookies = () => {
+    const cookies = document.cookie.split(";");
+    const cookieDict: { [key: string]: string } = {};
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].split("=");
+      cookieDict[cookie[0].trim()] = cookie[1];
+    }
+    return cookieDict;
   };
 
-  const joinGame = (gameId: number) => {
-    const ws = new WebSocket(`ws://127.0.0.1:8000/ws/join/${gameId}/${wsId}`);
-    ws.onopen = () => {
-      ws.send(JSON.stringify({ buyIn: 1000 }));
-      navigate(`/tableLobby/${gameId}`);
+  const createGame = (tableName: string, minBet: number) => {
+    const wsId = getCookies()["wsId"];
+    const ws = new WebSocket("ws://localhost:8000/ws/create/" + wsId);
+    const msg = JSON.stringify({ tableName: tableName, minBet: minBet });
+
+    ws.onopen = function () {
+      ws.send(msg);
     };
   };
 
+  const joinGame = (gameId: number) => {
+    const wsId = getCookies()["wsId"];
+    const ws = new WebSocket(
+      "ws://localhost:8000/ws/join/" + gameId + "/" + wsId
+    );
+    const msg = JSON.stringify({ buyIn: 1000 });
+
+    ws.onopen = function () {
+      ws.send(msg);
+      window.location.href = "http://localhost:5173/tableLobby/" + gameId;
+    };
+  };
+
+  const styles = {
+    body: {
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      height: "100vh",
+      margin: 0,
+      fontFamily: "Arial, sans-serif",
+    },
+    button: {
+      margin: "10px",
+      padding: "10px 20px",
+      fontSize: "16px",
+      cursor: "pointer",
+    },
+  };
+
   return (
-    <div className="flex h-screen items-center justify-center gap-4">
-      <button
-        onClick={() => createGame("table", 20)}
-        className="rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600"
-      >
+    <div style={styles.body}>
+      <button style={styles.button} onClick={() => createGame("stolik", 20)}>
         Create Game
       </button>
-      <button
-        onClick={() => joinGame(0)}
-        className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
-      >
-        Join Game
+      <button style={styles.button} onClick={() => joinGame(0)}>
+        Join
       </button>
     </div>
   );
-}
+};
 
-export default Lobby;
+export default LobbyPage;

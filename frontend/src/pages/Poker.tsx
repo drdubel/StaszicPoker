@@ -1,117 +1,206 @@
-import { useParams } from "react-router-dom";
-import { useWebSocket } from "../hooks/useWebSocket";
-import { useEffect, useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
-function Poker() {
-  const { tableId } = useParams();
-  const wsId = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith("wsId="))
-    ?.split("=")[1];
+const PokerPage: React.FC = () => {
+  const [currentBet, setCurrentBet] = useState(0);
+  const [currentPot, setCurrentPot] = useState(0);
+  const [yourCurrentBet, setYourCurrentBet] = useState(0);
+  const [currentChips, setCurrentChips] = useState(0);
+  const [currentPlayer, setCurrentPlayer] = useState("");
+  const [winningOrder, setWinningOrder] = useState("");
+  const [showWinningOrder, setShowWinningOrder] = useState(false);
+  const [showNextRound, setShowNextRound] = useState(false);
+  const [cards, setCards] = useState(["CB", "CB", "CB", "CB", "CB"]);
+  const [playerCards, setPlayerCards] = useState(["CB", "CB"]);
 
-  const [gameState, setGameState] = useState({
-    playerCards: ["CB", "CB"],
-    communityCards: ["CB", "CB", "CB", "CB", "CB"],
-    currentBet: 0,
-    currentPot: 0,
-    yourCurrentBet: 0,
-    currentChips: 0,
-    currentPlayer: "",
-    playerId: "",
-  });
+  const wsRef = useRef<WebSocket | null>(null);
+  const yourIdRef = useRef<string>("");
 
-  const { lastMessage, sendMessage } = useWebSocket(
-    `ws://127.0.0.1:8000/ws/betting/${tableId}/${wsId}`
-  );
+  const getCookies = () => {
+    const cookies = document.cookie.split(";");
+    const cookieDict: { [key: string]: string } = {};
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].split("=");
+      cookieDict[cookie[0].trim()] = cookie[1];
+    }
+    return cookieDict;
+  };
 
   useEffect(() => {
-    if (!lastMessage) return;
+    const wsId = getCookies()["wsId"];
+    const betting = new WebSocket("ws://localhost:8000/ws/betting/0/" + wsId);
+    wsRef.current = betting;
 
-    const type = lastMessage[0];
-    const data = lastMessage.substring(1);
+    betting.onmessage = function (event) {
+      let msg = JSON.parse(event.data).replace(/'/g, '"');
+      console.log(msg);
 
-    switch (type) {
-      case "Y":
-        setGameState((prev) => ({ ...prev, playerId: data }));
-        break;
-      case "N":
-        setGameState((prev) => ({ ...prev, playerCards: JSON.parse(data) }));
-        break;
-      case "D":
-        setGameState((prev) => ({ ...prev, communityCards: JSON.parse(data) }));
-        break;
-      case "B":
-        setGameState((prev) => ({ ...prev, currentBet: parseInt(data) }));
-        break;
-      case "P":
-        setGameState((prev) => ({ ...prev, currentPot: parseInt(data) }));
-        break;
-      case "G":
-        setGameState((prev) => ({ ...prev, currentPlayer: data }));
-        break;
-      // Add other message types as needed
+      if (msg[0] == "B") {
+        setCurrentBet(parseInt(msg.substring(1)));
+      } else if (msg[0] == "C") {
+        msg = JSON.parse(msg.substring(1));
+        console.log(msg);
+        setCurrentChips(msg[yourIdRef.current]);
+      } else if (msg[0] == "D") {
+        console.log(msg.substring(1));
+        msg = JSON.parse(msg.substring(1));
+        setCards(msg);
+      } else if (msg[0] == "E") {
+        const winOrder = JSON.parse(msg.substring(1));
+        console.log(winOrder);
+        setCurrentPlayer("Game Over");
+        setCurrentBet(0);
+        setCurrentPot(0);
+        setYourCurrentBet(0);
+        setWinningOrder(JSON.stringify(winOrder));
+        setShowWinningOrder(true);
+        setShowNextRound(true);
+      } else if (msg[0] == "G") {
+        if (msg.substring(1) == yourIdRef.current) {
+          setCurrentPlayer("Your turn");
+        } else {
+          setCurrentPlayer(msg.substring(1));
+        }
+      } else if (msg[0] == "M") {
+        msg = JSON.parse(msg.substring(1));
+        setYourCurrentBet(msg[yourIdRef.current]);
+      } else if (msg[0] == "N") {
+        msg = JSON.parse(msg.substring(1));
+        setShowWinningOrder(false);
+        setShowNextRound(false);
+        setPlayerCards(msg);
+      } else if (msg[0] == "P") {
+        setCurrentPot(parseInt(msg.substring(1)));
+      } else if (msg[0] == "Y") {
+        yourIdRef.current = msg.substring(1);
+      }
+    };
+
+    return () => {
+      betting.close();
+    };
+  }, []);
+
+  const nextRound = () => {
+    if (wsRef.current) {
+      wsRef.current.send('"N"');
     }
-  }, [lastMessage]);
+  };
 
-  const placeBet = (amount: number) => {
-    sendMessage(amount.toString());
+  const action = (value: number) => {
+    const msg = value.toString();
+    console.log(msg);
+    if (wsRef.current) {
+      wsRef.current.send(msg);
+    }
+  };
+
+  const styles = {
+    body: {
+      fontFamily: "Arial, sans-serif",
+      textAlign: "center" as const,
+      marginTop: "50px",
+    },
+    button: {
+      margin: "10px",
+      padding: "10px 20px",
+      fontSize: "16px",
+      cursor: "pointer",
+      textAlign: "center" as const,
+    },
+    message: {
+      marginTop: "20px",
+      fontSize: "18px",
+      color: "#333",
+    },
   };
 
   return (
-    <div className="flex h-screen flex-col items-center justify-center gap-4">
-      <div className="flex gap-2">
-        {gameState.communityCards.map((card, i) => (
+    <div style={styles.body}>
+      <h1>Example HTML with 5 Buttons</h1>
+      <button style={styles.button} onClick={() => action(100)}>
+        Bet 100
+      </button>
+      <button style={styles.button} onClick={() => action(200)}>
+        Bet 200
+      </button>
+      <button style={styles.button} onClick={() => action(300)}>
+        Bet 300
+      </button>
+      <button style={styles.button} onClick={() => action(400)}>
+        Bet 400
+      </button>
+      <button style={styles.button} onClick={() => action(500)}>
+        Bet 500
+      </button>
+      <button style={styles.button} onClick={() => action(currentChips)}>
+        All in
+      </button>
+      <button
+        style={styles.button}
+        onClick={() => action(currentBet - yourCurrentBet)}
+      >
+        Call
+      </button>
+      <button style={styles.button} onClick={() => action(0)}>
+        Check
+      </button>
+      <button style={styles.button} onClick={() => action(-1)}>
+        Fold
+      </button>
+
+      <div id="message" style={styles.message}></div>
+
+      <h1>
+        Current bet: <span>{currentBet}</span>
+      </h1>
+      <h1>
+        Your current bet: <span>{yourCurrentBet}</span>
+      </h1>
+      <h1>
+        Current player: <span>{currentPlayer}</span>
+      </h1>
+      <h1>
+        Current pot: <span>{currentPot}</span>
+      </h1>
+      <h1>
+        Current chips: <span>{currentChips}</span>
+      </h1>
+
+      <div>
+        {cards.map((card, index) => (
           <img
-            key={i}
-            src={`/cards/${card}.png`}
-            alt={`Community card ${i + 1}`}
-            className="h-32 w-24"
+            key={index}
+            src={`/static/cards/${card}.png`}
+            alt={`Card ${index + 1}`}
+            width="125"
           />
         ))}
       </div>
-      <div className="flex gap-2">
-        {gameState.playerCards.map((card, i) => (
+
+      <div>
+        {playerCards.map((card, index) => (
           <img
-            key={i}
-            src={`/cards/${card}.png`}
-            alt={`Your card ${i + 1}`}
-            className="h-32 w-24"
+            key={index}
+            src={`/static/cards/${card}.png`}
+            alt={`Player card ${index + 1}`}
+            width="125"
           />
         ))}
       </div>
-      <div className="flex gap-2">
-        <button
-          onClick={() => placeBet(100)}
-          className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
-        >
-          Bet 100
+
+      {showWinningOrder && (
+        <h1>
+          Winning order: <span>{winningOrder}</span>
+        </h1>
+      )}
+
+      {showNextRound && (
+        <button style={styles.button} onClick={nextRound}>
+          Next Round
         </button>
-        <button
-          onClick={() => placeBet(0)}
-          className="rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600"
-        >
-          Check
-        </button>
-        <button
-          onClick={() => placeBet(-1)}
-          className="rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
-        >
-          Fold
-        </button>
-      </div>
-      <div className="text-lg">
-        <p>Current bet: {gameState.currentBet}</p>
-        <p>Current pot: {gameState.currentPot}</p>
-        <p>Your chips: {gameState.currentChips}</p>
-        <p>
-          Current player:{" "}
-          {gameState.currentPlayer === gameState.playerId
-            ? "Your turn"
-            : gameState.currentPlayer}
-        </p>
-      </div>
+      )}
     </div>
   );
-}
+};
 
-export default Poker;
+export default PokerPage;
