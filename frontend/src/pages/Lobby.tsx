@@ -51,23 +51,6 @@ const LobbyPage: React.FC = () => {
     },
   };
 
-  const styles = {
-    body: {
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      height: "100vh",
-      margin: 0,
-      fontFamily: "Arial, sans-serif",
-    },
-    button: {
-      margin: "10px",
-      padding: "10px 20px",
-      fontSize: "16px",
-      cursor: "pointer",
-    },
-  };
-
   return (
     <div style={styles.body}>
       <button style={styles.button} onClick={() => createGame("stolik", 20)}>
