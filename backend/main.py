@@ -7,8 +7,7 @@ from typing import Optional
 import structlog
 from authlib.integrations.starlette_client import OAuth, OAuthError
 from fastapi import Cookie, FastAPI, Response, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.config import Config
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.requests import Request
@@ -22,10 +21,15 @@ logger = structlog.get_logger()
 
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["Set-Cookie", "Authorization"],
+)
 app.add_middleware(SessionMiddleware, secret_key="!secret")
-app.mount("/static", StaticFiles(directory="backend/static", html=True), name="static")
-
-database = Database()
 tables: dict[int, Table] = {}
 
 config = Config("backend/data/.env")
@@ -45,27 +49,28 @@ with open("backend/data/cookies.pickle", "rb") as cookies:
 
 @app.get("/")
 async def homepage():
-    return HTMLResponse('<a href="/login">login</a>')
-
+    return {"status": "ok"}
 
 @app.get("/lobby")
 async def lobby():
-    return FileResponse("backend/static/lobby.html")
-
+    return {"status": "ok"}
 
 @app.get("/tableLobby/{tableId}")
-async def tableLobby():
-    return FileResponse("backend/static/tableLobby.html")
-
+async def tableLobby(tableId: int):
+    if tableId not in tables:
+        return {"error": "Table not found"}, 404
+    return {"status": "ok", "tableId": tableId}
 
 @app.get("/poker/{tableId}")
-async def rooms():
-    return FileResponse("backend/static/poker.html")
+async def rooms(tableId: int):
+    if tableId not in tables:
+        return {"error": "Table not found"}, 404
+    return {"status": "ok", "tableId": tableId}
 
 
 @app.get("/login")
 async def login(request: Request):
-    redirect_uri = "http://127.0.0.1:8000/auth"
+    redirect_uri = "http://localhost:8000/auth"
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 
@@ -88,7 +93,7 @@ async def auth(request: Request):
         with open("backend/data/cookies.pickle", "wb") as cookies:
             dump(access_cookies, cookies)
 
-        response = RedirectResponse(url="http://127.0.0.1:8000/lobby")
+        response = RedirectResponse(url="http://localhost:5173/lobby")
         response.set_cookie("access_token", access_token, max_age=3600 * 24 * 30)
         response.set_cookie("wsId", wsId, max_age=3600 * 24 * 30)
 
@@ -105,7 +110,7 @@ async def logout(request: Request, response: Response, access_token: Optional[st
     request.session.pop("user", None)
     response.delete_cookie(key="access_token")
 
-    return RedirectResponse(url="http://127.0.0.1:8000/")
+    return RedirectResponse(url="http://localhost:5173/")
 
 
 @app.websocket("/ws/create/{wsId}")
@@ -282,4 +287,4 @@ async def websocket_betting(websocket: WebSocket, tableId: int, wsId: str, acces
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="localhost", port=8000)
