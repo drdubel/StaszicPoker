@@ -13,7 +13,6 @@ from starlette.middleware.sessions import SessionMiddleware
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, RedirectResponse
 
-from backend.database import Database
 from backend.gameLogic import Table
 from backend.websocket import ws_manager
 
@@ -54,6 +53,38 @@ async def homepage():
 @app.get("/lobby")
 async def lobby():
     return {"status": "ok"}
+
+@app.get("/api/tables")
+async def get_tables():
+    """Get list of all available tables"""
+    table_list = []
+    for table_id, table in tables.items():
+        table_info = {
+            "id": table_id,
+            "players": len(table.players),
+            "maxPlayers": 8,
+            "minBet": table.min_bet,
+            "status": "waiting" if not table.started else "playing",
+            "pot": table.pot if table.started else 0
+        }
+        table_list.append(table_info)
+    return {"tables": table_list}
+
+@app.post("/api/create-table")
+async def create_table_api(request: Request):
+    """Create a new table via API"""
+    data = await request.json()
+    min_bet = data.get("minBet", 20)
+    table_name = data.get("tableName", f"Table {Table.tableId}")
+    
+    new_table = Table(min_bet)
+    tables[new_table.tableId] = new_table
+    
+    return {
+        "success": True,
+        "tableId": new_table.tableId,
+        "tableName": table_name
+    }
 
 @app.get("/tableLobby/{tableId}")
 async def tableLobby(tableId: int):
@@ -102,10 +133,11 @@ async def auth(request: Request):
 
 @app.get("/logout")
 async def logout(request: Request, response: Response, access_token: Optional[str] = Cookie(None)):
-    access_cookies.pop(access_token)
+    if access_token in access_cookies:
+        access_cookies.pop(access_token)
 
-    with open("backend/data/cookies.pickle", "wb") as cookies:
-        dump(access_cookies, cookies)
+        with open("backend/data/cookies.pickle", "wb") as cookies:
+            dump(access_cookies, cookies)
 
     request.session.pop("user", None)
     response.delete_cookie(key="access_token")
@@ -121,9 +153,10 @@ async def createTable(websocket: WebSocket):
         message = await websocket.receive_text()
         message = json.loads(message)
 
-        tables[Table.tableId - 1] = Table(database, message["minBet"])
+        new_table = Table(message["minBet"])
+        tables[new_table.tableId] = new_table
 
-        await ws_manager.broadcast(f"C{Table.tableId - 1}", "create")
+        await ws_manager.broadcast(f"C{new_table.tableId}", "create")
 
     except WebSocketDisconnect:
         logger.info("Player disconnected")

@@ -5,6 +5,7 @@ import Login from "./pages/Login";
 import Lobby from "./pages/Lobby";
 import TableLobby from "./pages/TableLobby";
 import Poker from "./pages/Poker";
+import "./index.css";
 
 function App() {
   return (
