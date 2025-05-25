@@ -34,9 +34,10 @@ class Player:
 class Table:
     tableId: int = 0
 
-    def __init__(self, min_bet: int):
+    def __init__(self, min_bet: int, name: str):
         Table.tableId = Table.tableId % int(1e18)
         self.tableId: int = Table.tableId
+        self.name: str = name
         self.community_cards: list[str] = ["CB" for _ in range(5)]
         self.last_bet: int = 0
         self.first_to_act: int = 0

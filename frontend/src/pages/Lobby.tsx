@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 
 interface Table {
   id: number;
+  name: string;
   players: number;
   maxPlayers: number;
   minBet: number;
@@ -186,7 +187,7 @@ const LobbyPage: React.FC = () => {
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="text-xl font-semibold text-white mb-1">
-                    Table #{table.id}
+                    {table.name || `Table #${table.id}`}
                   </h3>
                   <span
                     className={`text-sm font-medium ${getStatusColor(

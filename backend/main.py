@@ -61,6 +61,7 @@ async def get_tables():
     for table_id, table in tables.items():
         table_info = {
             "id": table_id,
+            "name": table.name,
             "players": len(table.players),
             "maxPlayers": 8,
             "minBet": table.min_bet,
@@ -77,7 +78,7 @@ async def create_table_api(request: Request):
     min_bet = data.get("minBet", 20)
     table_name = data.get("tableName", f"Table {Table.tableId}")
     
-    new_table = Table(min_bet)
+    new_table = Table(min_bet, table_name)
     tables[new_table.tableId] = new_table
     
     return {
