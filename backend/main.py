@@ -169,12 +169,16 @@ async def createTable(websocket: WebSocket):
 async def startTable(websocket: WebSocket, tableId: int, wsId: str, access_token: Optional[str] = Cookie(None)):
     if tableId not in tables or wsId not in tables[tableId].players:
         logger.info("Player/Table not found")
-
+        await websocket.accept()
+        await websocket.send_text('"DISCONNECT"')
+        await websocket.close()
         return
 
     if access_token not in access_cookies or wsId != access_cookies[access_token][1]:
         logger.info("Player not authorized")
-
+        await websocket.accept()
+        await websocket.send_text('"DISCONNECT"')
+        await websocket.close()
         return
 
     await ws_manager.connect(websocket)
@@ -203,12 +207,16 @@ async def startTable(websocket: WebSocket, tableId: int, wsId: str, access_token
 async def joinTable(websocket: WebSocket, tableId: int, wsId: str, access_token: Optional[str] = Cookie(None)):
     if tableId not in tables:
         logger.info("Table not found")
-
+        await websocket.accept()
+        await websocket.send_text('"DISCONNECT"')
+        await websocket.close()
         return
 
     if access_token not in access_cookies or wsId != access_cookies[access_token][1]:
         logger.info("Player not authorized")
-
+        await websocket.accept()
+        await websocket.send_text('"DISCONNECT"')
+        await websocket.close()
         return
 
     await ws_manager.connect(websocket)
@@ -262,12 +270,16 @@ async def nextRound(websocket: WebSocket, tableId: int):
 async def websocket_betting(websocket: WebSocket, tableId: int, wsId: str, access_token: Optional[str] = Cookie(None)):
     if tableId not in tables or wsId not in tables[tableId].players:
         logger.info("Player/Table not found")
-
+        await websocket.accept()
+        await websocket.send_text('"DISCONNECT"')
+        await websocket.close()
         return
 
     if access_token not in access_cookies or wsId != access_cookies[access_token][1]:
         logger.info("Player not authorized")
-
+        await websocket.accept()
+        await websocket.send_text('"DISCONNECT"')
+        await websocket.close()
         return
 
     await ws_manager.connect(websocket)

@@ -33,6 +33,10 @@ const PokerPage: React.FC = () => {
     betting.onmessage = function (event) {
       let msg = JSON.parse(event.data).replace(/'/g, '"');
       console.log(msg);
+      if (msg === "DISCONNECT") {
+        window.location.href = "/";
+        return;
+      }
 
       if (msg[0] == "B") {
         setCurrentBet(parseInt(msg.substring(1)));
@@ -94,111 +98,159 @@ const PokerPage: React.FC = () => {
     }
   };
 
-  const styles = {
-    body: {
-      fontFamily: "Arial, sans-serif",
-      textAlign: "center" as const,
-      marginTop: "50px",
-    },
-    button: {
-      margin: "10px",
-      padding: "10px 20px",
-      fontSize: "16px",
-      cursor: "pointer",
-      textAlign: "center" as const,
-    },
-    message: {
-      marginTop: "20px",
-      fontSize: "18px",
-      color: "#333",
-    },
-  };
-
   return (
-    <div style={styles.body}>
-      <h1>Example HTML with 5 Buttons</h1>
-      <button style={styles.button} onClick={() => action(100)}>
-        Bet 100
-      </button>
-      <button style={styles.button} onClick={() => action(200)}>
-        Bet 200
-      </button>
-      <button style={styles.button} onClick={() => action(300)}>
-        Bet 300
-      </button>
-      <button style={styles.button} onClick={() => action(400)}>
-        Bet 400
-      </button>
-      <button style={styles.button} onClick={() => action(500)}>
-        Bet 500
-      </button>
-      <button style={styles.button} onClick={() => action(currentChips)}>
-        All in
-      </button>
-      <button
-        style={styles.button}
-        onClick={() => action(currentBet - yourCurrentBet)}
-      >
-        Call
-      </button>
-      <button style={styles.button} onClick={() => action(0)}>
-        Check
-      </button>
-      <button style={styles.button} onClick={() => action(-1)}>
-        Fold
-      </button>
+    <div className="min-h-screen bg-gradient-to-br from-emerald-900 via-slate-900 to-emerald-950 p-4">
+      {/* Poker Table */}
+      <div className="relative max-w-7xl mx-auto">
+        {/* Game Info Bar */}
+        <div className="flex justify-between items-center mb-8 bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50">
+          <div className="flex space-x-8">
+            <div>
+              <p className="text-slate-400 text-sm">Current Pot</p>
+              <p className="text-2xl font-bold text-emerald-400">
+                ${currentPot}
+              </p>
+            </div>
+            <div>
+              <p className="text-slate-400 text-sm">Current Bet</p>
+              <p className="text-2xl font-bold text-white">${currentBet}</p>
+            </div>
+          </div>
+          <div>
+            <p className="text-slate-400 text-sm">Current Player</p>
+            <p
+              className={`text-xl font-semibold ${
+                currentPlayer === "Your turn"
+                  ? "text-emerald-400"
+                  : "text-white"
+              }`}
+            >
+              {currentPlayer}
+            </p>
+          </div>
+        </div>
 
-      <div id="message" style={styles.message}></div>
-
-      <h1>
-        Current bet: <span>{currentBet}</span>
-      </h1>
-      <h1>
-        Your current bet: <span>{yourCurrentBet}</span>
-      </h1>
-      <h1>
-        Current player: <span>{currentPlayer}</span>
-      </h1>
-      <h1>
-        Current pot: <span>{currentPot}</span>
-      </h1>
-      <h1>
-        Current chips: <span>{currentChips}</span>
-      </h1>
-
-      <div>
-        {cards.map((card, index) => (
-          <img
-            key={index}
-            src={`/cards/${card}.png`}
-            alt={`Card ${index + 1}`}
-            width="125"
+        {/* Poker Table */}
+        <div className="relative w-full aspect-[2/1] bg-emerald-800 rounded-[12rem] border-8 border-brown-900 shadow-2xl mb-8">
+          {/* Felt Pattern */}
+          <div
+            className="absolute inset-0 rounded-[11rem] opacity-30"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+            }}
           />
-        ))}
+
+          {/* Community Cards */}
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex space-x-2">
+            {cards.map((card, index) => (
+              <div
+                key={index}
+                className="transform transition-transform hover:scale-110 hover:-translate-y-2"
+              >
+                <img
+                  src={`/cards/${card}.png`}
+                  alt={`Card ${index + 1}`}
+                  className="w-24 rounded-lg shadow-xl"
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Player Cards */}
+          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-2">
+            {playerCards.map((card, index) => (
+              <div
+                key={index}
+                className="transform transition-transform hover:scale-110 hover:-translate-y-2"
+              >
+                <img
+                  src={`/cards/${card}.png`}
+                  alt={`Player card ${index + 1}`}
+                  className="w-24 rounded-lg shadow-xl"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Player Controls */}
+        <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700/50">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <p className="text-slate-400 text-sm">Your Chips</p>
+              <p className="text-2xl font-bold text-white">${currentChips}</p>
+            </div>
+            <div>
+              <p className="text-slate-400 text-sm">Your Current Bet</p>
+              <p className="text-2xl font-bold text-emerald-400">
+                ${yourCurrentBet}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-2">
+                {[100, 200, 300, 400, 500].map((amount) => (
+                  <button
+                    key={amount}
+                    onClick={() => action(amount)}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                  >
+                    ${amount}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => action(currentChips)}
+                className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+              >
+                All In
+              </button>
+              <button
+                onClick={() => action(currentBet - yourCurrentBet)}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+              >
+                Call
+              </button>
+              <button
+                onClick={() => action(0)}
+                className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+              >
+                Check
+              </button>
+              <button
+                onClick={() => action(-1)}
+                className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+              >
+                Fold
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Game Over Modal */}
+        {showWinningOrder && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-slate-800 rounded-xl p-8 max-w-md w-full mx-4">
+              <h2 className="text-2xl font-bold text-white mb-4">Game Over</h2>
+              <p className="text-slate-400 mb-6">
+                Winning order: {winningOrder}
+              </p>
+              {showNextRound && (
+                <button
+                  onClick={nextRound}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+                >
+                  Next Round
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
-
-      <div>
-        {playerCards.map((card, index) => (
-          <img
-            key={index}
-            src={`/cards/${card}.png`}
-            alt={`Player card ${index + 1}`}
-            width="125"
-          />
-        ))}
-      </div>
-
-      {showWinningOrder && (
-        <h1>
-          Winning order: <span>{winningOrder}</span>
-        </h1>
-      )}
-
-      {showNextRound && (
-        <button style={styles.button} onClick={nextRound}>
-          Next Round
-        </button>
-      )}
     </div>
   );
 };

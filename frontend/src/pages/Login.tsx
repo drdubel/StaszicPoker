@@ -1,7 +1,17 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 const ModernLogin: React.FC = () => {
   const [isHovered, setIsHovered] = useState(false);
+
+  useEffect(() => {
+    const cookies = document.cookie.split(";");
+    const hasAccessToken = cookies.some((cookie) =>
+      cookie.trim().startsWith("access_token=")
+    );
+    if (hasAccessToken) {
+      window.location.href = "/lobby";
+    }
+  }, []);
 
   const handleLogin = () => {
     window.location.href = "http://localhost:8000/login";
