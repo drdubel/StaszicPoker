@@ -114,6 +114,15 @@ const LobbyPage: React.FC = () => {
     }
   };
 
+  const isValidMinBet = () => {
+    const n = newTableMinBet;
+    return !isNaN(n) && n >= 1;
+  };
+  const isValidBuyIn = () => {
+    const n = buyInAmount;
+    return !isNaN(n) && n >= 100;
+  };
+
   const getStatusColor = (status: string) => {
     return status === "waiting" ? "text-green-400" : "text-yellow-400";
   };
@@ -306,9 +315,7 @@ const LobbyPage: React.FC = () => {
                 <input
                   type="number"
                   value={newTableMinBet}
-                  onChange={(e) =>
-                    setNewTableMinBet(parseInt(e.target.value) || 20)
-                  }
+                  onChange={(e) => setNewTableMinBet(parseInt(e.target.value))}
                   min="1"
                   className="w-full bg-slate-700/50 backdrop-blur border border-slate-600/50 rounded-2xl px-4 py-3 text-white focus:border-emerald-500 focus:outline-none transition-colors"
                 />
@@ -320,9 +327,7 @@ const LobbyPage: React.FC = () => {
                 <input
                   type="number"
                   value={buyInAmount}
-                  onChange={(e) =>
-                    setBuyInAmount(parseInt(e.target.value) || 1000)
-                  }
+                  onChange={(e) => setBuyInAmount(parseInt(e.target.value))}
                   min="100"
                   step="100"
                   className="w-full bg-slate-700/50 backdrop-blur border border-slate-600/50 rounded-2xl px-4 py-3 text-white focus:border-emerald-500 focus:outline-none transition-colors"
@@ -342,7 +347,12 @@ const LobbyPage: React.FC = () => {
               </button>
               <button
                 onClick={createGame}
-                disabled={loading || !newTableName.trim()}
+                disabled={
+                  loading ||
+                  !newTableName.trim() ||
+                  !isValidMinBet() ||
+                  !isValidBuyIn()
+                }
                 className="flex-1 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white py-3 rounded-2xl font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl group relative overflow-hidden"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -389,7 +399,8 @@ const LobbyPage: React.FC = () => {
               </button>
               <button
                 onClick={confirmJoin}
-                className="flex-1 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white py-3 rounded-2xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl group relative overflow-hidden"
+                disabled={!isValidBuyIn()}
+                className="flex-1 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white py-3 rounded-2xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl group relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <span className="relative">Join Table</span>
