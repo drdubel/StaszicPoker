@@ -5,6 +5,7 @@
 - [ ] Implement timeout when player disconnects
 - [ ] Fix starting player with 3+ players preflop
 - [ ] Fix all in when not enough chips
+- [ ] Fix player disconnected when refreshing the page
 
 ## Frontend
 
