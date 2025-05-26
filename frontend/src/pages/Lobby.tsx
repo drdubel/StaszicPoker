@@ -246,21 +246,22 @@ const LobbyPage: React.FC = () => {
 
               <button
                 onClick={() => handleJoinClick(table.id)}
-                disabled={table.players >= table.maxPlayers}
+                disabled={
+                  table.players >= table.maxPlayers ||
+                  table.status !== "waiting"
+                }
                 className={`w-full py-3 rounded-2xl font-semibold transition-all duration-300 relative overflow-hidden ${
-                  table.players >= table.maxPlayers
+                  table.players >= table.maxPlayers ||
+                  table.status === "playing"
                     ? "bg-slate-600/50 text-slate-400 cursor-not-allowed"
                     : "bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white transform hover:scale-105 shadow-lg hover:shadow-xl group"
                 }`}
               >
-                {table.players < table.maxPlayers && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                )}
-                <span className="relative">
-                  {table.players >= table.maxPlayers
-                    ? "Table Full"
-                    : "Join Table"}
-                </span>
+                {table.players < table.maxPlayers
+                  ? table.status === "playing"
+                    ? "Game in Progress"
+                    : "Join Table"
+                  : "Table Full"}
               </button>
             </div>
           ))}
