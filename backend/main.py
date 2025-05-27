@@ -1,4 +1,5 @@
 import json
+from contextlib import asynccontextmanager
 from hashlib import md5
 from pickle import dump, load
 from secrets import token_urlsafe
@@ -13,13 +14,25 @@ from starlette.middleware.sessions import SessionMiddleware
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, RedirectResponse
 
+from backend.database import Database
 from backend.gameLogic import Table
 from backend.websocket import ws_manager
 
+# Initialize database connection
+database = Database()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await database.init()
+    yield
+
+
+# Initialize logger
 logger = structlog.get_logger()
 
-
-app = FastAPI()
+# Initialize FastAPI app
+app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
@@ -29,8 +42,12 @@ app.add_middleware(
     expose_headers=["Set-Cookie", "Authorization"],
 )
 app.add_middleware(SessionMiddleware, secret_key="!secret")
+
+# Initialize tables dictionary
 tables: dict[int, Table] = {}
 
+
+# Init OAuth
 config = Config("backend/data/.env")
 oauth = OAuth(config)
 
@@ -41,7 +58,7 @@ oauth.register(
     client_kwargs={"scope": "openid email profile"},
 )
 
-
+# Load cookies
 with open("backend/data/cookies.pickle", "rb") as cookies:
     access_cookies: dict = load(cookies)
 
@@ -50,9 +67,19 @@ with open("backend/data/cookies.pickle", "rb") as cookies:
 async def homepage():
     return {"status": "ok"}
 
+
 @app.get("/lobby")
 async def lobby():
     return {"status": "ok"}
+
+
+@app.get("/stats")
+async def stats():
+    with open("backend/static/stats.html", "r") as file:
+        content = file.read()
+
+        return HTMLResponse(content=content)
+
 
 @app.get("/api/tables")
 async def get_tables():
@@ -66,10 +93,11 @@ async def get_tables():
             "maxPlayers": 8,
             "minBet": table.min_bet,
             "status": "waiting" if not table.started else "playing",
-            "pot": table.pot if table.started else 0
+            "pot": table.pot if table.started else 0,
         }
         table_list.append(table_info)
     return {"tables": table_list}
+
 
 @app.post("/api/create-table")
 async def create_table_api(request: Request):
@@ -77,21 +105,19 @@ async def create_table_api(request: Request):
     data = await request.json()
     min_bet = data.get("minBet", 20)
     table_name = data.get("tableName", f"Table {Table.tableId}")
-    
-    new_table = Table(min_bet, table_name)
+
+    new_table = Table(database, min_bet, table_name)
     tables[new_table.tableId] = new_table
-    
-    return {
-        "success": True,
-        "tableId": new_table.tableId,
-        "tableName": table_name
-    }
+
+    return {"success": True, "tableId": new_table.tableId, "tableName": table_name}
+
 
 @app.get("/tableLobby/{tableId}")
 async def tableLobby(tableId: int):
     if tableId not in tables:
         return {"error": "Table not found"}, 404
     return {"status": "ok", "tableId": tableId}
+
 
 @app.get("/poker/{tableId}")
 async def rooms(tableId: int):
@@ -325,6 +351,25 @@ async def websocket_betting(websocket: WebSocket, tableId: int, wsId: str, acces
             else:
                 await ws_manager.broadcast(f"Y{tables[tableId].player_order.index(wsId)}", f"betting/{tableId}/{wsId}")
 
+        logger.info("Player disconnected")
+
+        ws_manager.disconnect(websocket)
+
+
+@app.websocket("/ws/read/{wsId}")
+async def read_data(websocket: WebSocket, wsId: str):
+    await ws_manager.connect(websocket)
+
+    try:
+        while websocket and wsId in ws_manager.active_connections:
+            message = await websocket.receive_text()
+            logger.info((wsId, message))
+
+            if message == "READ":
+                data = await database.get_data("SELECT * FROM hands WHERE userId = %s", (wsId,))
+                await websocket.send_text(json.dumps(data))
+
+    except WebSocketDisconnect:
         logger.info("Player disconnected")
 
         ws_manager.disconnect(websocket)

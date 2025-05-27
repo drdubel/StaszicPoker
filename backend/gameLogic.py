@@ -1,9 +1,10 @@
 from random import sample
-
+from pprint import pprint
 import structlog
 
 from backend.arbiter import arbiter
 from backend.data.consts import cards
+from backend.database import Database
 from backend.websocket import ws_manager
 
 logger = structlog.get_logger()
@@ -34,8 +35,10 @@ class Player:
 class Table:
     tableId: int = 0
 
-    def __init__(self, min_bet: int, name: str):
+    def __init__(self, database: Database, min_bet: int, name: str):
         Table.tableId = Table.tableId % int(1e18)
+        self.database: Database = database
+
         self.tableId: int = Table.tableId
         self.name: str = name
         self.community_cards: list[str] = ["CB" for _ in range(5)]
@@ -106,6 +109,28 @@ class Table:
 
         logger.info(self.community_cards)
         await ws_manager.broadcast(f"D{self.community_cards}", f"betting/{self.tableId}")
+
+    async def save_data(self, winning_order: list[list[int]]):
+        for player in self.player_order:
+            data = {
+                "id": self.database.hand_id,
+                "userid": player,
+                "tablecards": self.community_cards,
+                "hand": self.players[player].cards,
+                "won": True if self.player_order.index(player) in winning_order[0] else False,
+                "stack": self.players[player].chips,
+                "pot": self.pot,
+                "bet": self.players[player].whole_bet,
+                "position": len(self.player_order) - self.small_blind + self.player_order.index(player)
+                if self.player_order.index(player) < self.small_blind
+                else self.player_order.index(player) - self.small_blind,
+                "players": self.player_order,
+            }
+            pprint(data)
+
+            await self.database.insert_data("hands", data)
+
+        self.database.hand_id += 1
 
     async def next_round(self):
         self.refill_deck()
@@ -235,6 +260,8 @@ class Table:
         )
 
         await ws_manager.broadcast(f"E{winning_order}", f"betting/{self.tableId}")
+
+        await self.save_data(winning_order)
 
         to_remove = []
         for player in self.players.values():
