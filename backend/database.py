@@ -43,7 +43,7 @@ class Database:
         await self.create_table(table_name, columns)
 
     async def create_tables(self):
-        await self.recreate_table(
+        await self.create_table(
             "hands",
             {
                 "id": "INT",
@@ -71,7 +71,21 @@ class Database:
             await cursor.execute(query, list(data.values()))
             await self.conn.commit()
 
-    async def get_data(self, command):
+    async def get_data(self):
         async with self.conn.cursor() as cursor:
-            await cursor.execute(command)
+            await cursor.execute("""SELECT
+                userid,
+                COUNT(*) FILTER (WHERE won) AS wins,
+                COUNT(*) FILTER (WHERE NOT won) AS losses,
+                SUM(
+                    CASE
+                    WHEN won THEN pot - bet
+                    ELSE -bet
+                    END
+                ) AS earnings
+                FROM hands
+                GROUP BY userid
+                ORDER BY earnings DESC;
+            """)
+
             return await cursor.fetchall()

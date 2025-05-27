@@ -5,6 +5,7 @@ from pickle import dump, load
 from secrets import token_urlsafe
 from typing import Optional
 
+from fastapi.staticfiles import StaticFiles
 import structlog
 from authlib.integrations.starlette_client import OAuth, OAuthError
 from fastapi import Cookie, FastAPI, Response, WebSocket, WebSocketDisconnect
@@ -42,6 +43,7 @@ app.add_middleware(
     expose_headers=["Set-Cookie", "Authorization"],
 )
 app.add_middleware(SessionMiddleware, secret_key="!secret")
+app.mount("/static", StaticFiles(directory="backend/static", html=True), name="static")
 
 # Initialize tables dictionary
 tables: dict[int, Table] = {}
@@ -361,13 +363,14 @@ async def read_data(websocket: WebSocket, wsId: str):
     await ws_manager.connect(websocket)
 
     try:
-        while websocket and wsId in ws_manager.active_connections:
-            message = await websocket.receive_text()
-            logger.info((wsId, message))
+        while websocket:
+            message = await database.get_data()
+            message = [list(row) for row in message]
 
-            if message == "READ":
-                data = await database.get_data("SELECT * FROM hands WHERE userId = %s", (wsId,))
-                await websocket.send_text(json.dumps(data))
+            print(message)
+
+            await ws_manager.broadcast(f"{message}".replace("'", '"'), f"read/{wsId}")
+            break
 
     except WebSocketDisconnect:
         logger.info("Player disconnected")

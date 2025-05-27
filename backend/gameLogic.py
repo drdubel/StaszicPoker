@@ -333,11 +333,11 @@ class Table:
                     return False
 
                 if bet > self.players[player].chips:
-                    logger.warning("Not enough money!")
+                    logger.info("All in!")
 
-                    return False
+                    bet = self.players[player].chips
 
-                if bet + self.players[player].bet > self.current_bet:
+                elif bet + self.players[player].bet > self.current_bet:
                     self.last_bet = self.current_player
                     self.prev_bet = self.current_bet
                     self.current_bet = self.players[player].bet + bet
