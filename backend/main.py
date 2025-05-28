@@ -19,7 +19,6 @@ from backend.database import Database
 from backend.gameLogic import Table
 from backend.websocket import ws_manager
 
-# Initialize database connection
 database = Database()
 
 
@@ -29,10 +28,8 @@ async def lifespan(app: FastAPI):
     yield
 
 
-# Initialize logger
 logger = structlog.get_logger()
 
-# Initialize FastAPI app
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
@@ -43,13 +40,10 @@ app.add_middleware(
     expose_headers=["Set-Cookie", "Authorization"],
 )
 app.add_middleware(SessionMiddleware, secret_key="!secret")
-app.mount("/static", StaticFiles(directory="backend/static", html=True), name="static")
 
-# Initialize tables dictionary
 tables: dict[int, Table] = {}
 
 
-# Init OAuth
 config = Config("backend/data/.env")
 oauth = OAuth(config)
 
@@ -60,7 +54,6 @@ oauth.register(
     client_kwargs={"scope": "openid email profile"},
 )
 
-# Load cookies
 with open("backend/data/cookies.pickle", "rb") as cookies:
     access_cookies: dict = load(cookies)
 
@@ -77,10 +70,7 @@ async def lobby():
 
 @app.get("/stats")
 async def stats():
-    with open("backend/static/stats.html", "r") as file:
-        content = file.read()
-
-        return HTMLResponse(content=content)
+    return {"status": "ok"}
 
 
 @app.get("/api/tables")

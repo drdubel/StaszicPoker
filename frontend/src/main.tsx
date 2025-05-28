@@ -5,6 +5,7 @@ import Login from "./pages/Login";
 import Lobby from "./pages/Lobby";
 import TableLobby from "./pages/TableLobby";
 import Poker from "./pages/Poker";
+import Stats from "./pages/Stats";
 import "./index.css";
 
 function App() {
@@ -13,6 +14,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/lobby" element={<Lobby />} />
+        <Route path="/stats" element={<Stats />} />
         <Route path="/tableLobby/:tableId" element={<TableLobby />} />
         <Route path="/poker/:tableId" element={<Poker />} />
       </Routes>

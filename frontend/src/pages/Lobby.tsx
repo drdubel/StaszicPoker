@@ -176,13 +176,21 @@ const LobbyPage: React.FC = () => {
                 <p className="text-slate-400">Premium Poker Experience</p>
               </div>
             </div>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white px-6 py-3 rounded-2xl font-semibold transform hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-2xl group relative overflow-hidden"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <span className="relative">Create Table</span>
-            </button>
+            <div className="flex space-x-4">
+              <button
+                onClick={() => (window.location.href = "/stats")}
+                className="bg-slate-700/60 hover:bg-slate-700 text-white px-6 py-3 rounded-2xl font-semibold transition-all duration-300 shadow-md hover:shadow-lg"
+              >
+                View Leaderboard
+              </button>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white px-6 py-3 rounded-2xl font-semibold transform hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-2xl group relative overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <span className="relative">Create Table</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
