@@ -5,7 +5,7 @@ from pickle import dump, load
 from secrets import token_urlsafe
 from typing import Optional
 
-from fastapi.staticfiles import StaticFiles
+from funkybob import UniqueRandomNameGenerator
 import structlog
 from authlib.integrations.starlette_client import OAuth, OAuthError
 from fastapi import Cookie, FastAPI, Response, WebSocket, WebSocketDisconnect
@@ -356,6 +356,10 @@ async def read_data(websocket: WebSocket, wsId: str):
         while websocket:
             message = await database.get_data()
             message = [list(row) for row in message]
+
+            for row in message:
+                it = iter(UniqueRandomNameGenerator(seed=int(row[0], 16)))
+                row[0] = next(it)
 
             print(message)
 

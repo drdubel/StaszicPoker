@@ -6,5 +6,5 @@ httpx
 authlib
 itsdangerous
 websockets
-psycopg2
 psycopg[binary]
+funkybob
