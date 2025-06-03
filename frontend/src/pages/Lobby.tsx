@@ -30,16 +30,6 @@ const LobbyPage: React.FC = () => {
     return cookieDict;
   };
 
-  // useEffect(() => {
-  //   const cookies = document.cookie.split(";");
-  //   const hasAccessToken = cookies.some((cookie) =>
-  //     cookie.trim().startsWith("access_token=")
-  //   );
-  //   if (!hasAccessToken) {
-  //     window.location.href = "/";
-  //   }
-  // }, []);
-
   const fetchTables = async () => {
     try {
       const response = await fetch("http://localhost:8000/api/tables");

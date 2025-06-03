@@ -75,7 +75,6 @@ async def stats():
 
 @app.get("/api/tables")
 async def get_tables():
-    """Get list of all available tables"""
     table_list = []
     for table_id, table in tables.items():
         table_info = {
@@ -93,7 +92,6 @@ async def get_tables():
 
 @app.post("/api/create-table")
 async def create_table_api(request: Request):
-    """Create a new table via API"""
     data = await request.json()
     min_bet = data.get("minBet", 20)
     table_name = data.get("tableName", f"Table {Table.tableId}")
@@ -164,39 +162,14 @@ async def logout(request: Request, response: Response, access_token: Optional[st
     return RedirectResponse(url="http://localhost:5173/")
 
 
-@app.websocket("/ws/create/{wsId}")
-async def createTable(websocket: WebSocket):
-    await ws_manager.connect(websocket)
-
-    try:
-        message = await websocket.receive_text()
-        message = json.loads(message)
-
-        new_table = Table(message["minBet"])
-        tables[new_table.tableId] = new_table
-
-        await ws_manager.broadcast(f"C{new_table.tableId}", "create")
-
-    except WebSocketDisconnect:
-        logger.info("Player disconnected")
-
-        ws_manager.disconnect(websocket)
-
-
 @app.websocket("/ws/start/{tableId}/{wsId}")
 async def startTable(websocket: WebSocket, tableId: int, wsId: str, access_token: Optional[str] = Cookie(None)):
     if tableId not in tables or wsId not in tables[tableId].players:
         logger.info("Player/Table not found")
-        # await websocket.accept()
-        # await websocket.send_text('"DISCONNECT"')
-        # await websocket.close()
         return
 
     if access_token not in access_cookies or wsId != access_cookies[access_token][1]:
         logger.info("Player not authorized")
-        # await websocket.accept()
-        # await websocket.send_text('"DISCONNECT"')
-        # await websocket.close()
         return
 
     await ws_manager.connect(websocket)
@@ -225,16 +198,10 @@ async def startTable(websocket: WebSocket, tableId: int, wsId: str, access_token
 async def joinTable(websocket: WebSocket, tableId: int, wsId: str, access_token: Optional[str] = Cookie(None)):
     if tableId not in tables:
         logger.info("Table not found")
-        # await websocket.accept()
-        # await websocket.send_text('"DISCONNECT"')
-        # await websocket.close()
         return
 
     if access_token not in access_cookies or wsId != access_cookies[access_token][1]:
         logger.info("Player not authorized")
-        # await websocket.accept()
-        # await websocket.send_text('"DISCONNECT"')
-        # await websocket.close()
         return
 
     await ws_manager.connect(websocket)
@@ -288,16 +255,10 @@ async def nextRound(websocket: WebSocket, tableId: int):
 async def websocket_betting(websocket: WebSocket, tableId: int, wsId: str, access_token: Optional[str] = Cookie(None)):
     if tableId not in tables or wsId not in tables[tableId].players:
         logger.info("Player/Table not found")
-        # await websocket.accept()
-        # await websocket.send_text('"DISCONNECT"')
-        # await websocket.close()
         return
 
     if access_token not in access_cookies or wsId != access_cookies[access_token][1]:
         logger.info("Player not authorized")
-        # await websocket.accept()
-        # await websocket.send_text('"DISCONNECT"')
-        # await websocket.close()
         return
 
     await ws_manager.connect(websocket)

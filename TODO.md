@@ -2,15 +2,18 @@
 
 ## Backend
 
-- [ ] Implement timeout when player disconnects
 - [ ] Fix starting player with 3+ players preflop
 - [ ] Fix all in when not enough chips
-- [ ] Fix player disconnected when refreshing the page
-- [ ] Fix player sometimes disconnecting when starting the game
+- [ ] Fix player disconnecting when refreshing the page
+- [x] Fix player sometimes disconnecting when starting the game
+- [ ] Add auto login
+- [ ] Add auto logout
 
 ## Frontend
 
 - [ ] Add animations for cards
+- [ ] Add better controls for bets
+- [ ] Add option to leave game
 
 ## General
 

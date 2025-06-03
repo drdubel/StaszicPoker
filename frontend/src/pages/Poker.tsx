@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useParams } from "react-router-dom";
 
 const PokerPage: React.FC = () => {
+  const { tableId } = useParams();
   const [currentBet, setCurrentBet] = useState(0);
   const [currentPot, setCurrentPot] = useState(0);
   const [yourCurrentBet, setYourCurrentBet] = useState(0);
@@ -36,16 +38,14 @@ const PokerPage: React.FC = () => {
 
   useEffect(() => {
     const wsId = getCookies()["wsId"];
-    const betting = new WebSocket("ws://localhost:8000/ws/betting/0/" + wsId);
+    const betting = new WebSocket(
+      `ws://localhost:8000/ws/betting/${tableId}/${wsId}`
+    );
     wsRef.current = betting;
 
     betting.onmessage = function (event) {
       let msg = JSON.parse(event.data).replace(/'/g, '"');
       console.log(msg);
-      // if (msg === "DISCONNECT") {
-      //   window.location.href = "/";
-      //   return;
-      // }
 
       if (msg[0] == "B") {
         setCurrentBet(parseInt(msg.substring(1)));
