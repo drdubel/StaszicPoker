@@ -42,10 +42,10 @@ const PokerPage: React.FC = () => {
     betting.onmessage = function (event) {
       let msg = JSON.parse(event.data).replace(/'/g, '"');
       console.log(msg);
-      if (msg === "DISCONNECT") {
-        window.location.href = "/";
-        return;
-      }
+      // if (msg === "DISCONNECT") {
+      //   window.location.href = "/";
+      //   return;
+      // }
 
       if (msg[0] == "B") {
         setCurrentBet(parseInt(msg.substring(1)));

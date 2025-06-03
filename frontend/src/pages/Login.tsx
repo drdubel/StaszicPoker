@@ -5,9 +5,9 @@ const ModernLogin: React.FC = () => {
 
   // useEffect(() => {
   //   const cookies = document.cookie.split(";");
-  //   // const hasAccessToken = cookies.some((cookie) =>
-  //   //   // cookie.trim().startsWith("access_token=")
-  //   // );
+  //   const hasAccessToken = cookies.some((cookie) =>
+  //     cookie.trim().startsWith("access_token=")
+  //   );
   //   if (hasAccessToken) {
   //     window.location.href = "/lobby";
   //   }

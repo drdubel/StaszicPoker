@@ -31,10 +31,10 @@ const TableLobby: React.FC = () => {
     websocket.onmessage = (event) => {
       const msg = JSON.parse(event.data);
       console.log(msg);
-      if (msg === "DISCONNECT") {
-        window.location.href = "/";
-        return;
-      }
+      // if (msg === "DISCONNECT") {
+      //   window.location.href = "/";
+      //   return;
+      // }
       if (msg === "0") {
         window.location.href = `http://localhost:5173/poker/${tableId}`;
       }
