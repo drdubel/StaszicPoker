@@ -15,27 +15,19 @@ class Database:
         await self.create_tables()
 
     async def create_table(self, table_name: str, columns: dict[str, str]):
-        async with self.conn.cursor() as cursor:
-            await cursor.execute(
-                f"""
-                CREATE TABLE IF NOT EXISTS %s (
-                    {",\n".join("%s %s" for _ in columns)}
-                );
-                """
-                % (table_name, *[typ for item in columns.items() for typ in item]),
-            )
+        cols = ", ".join(f"{col} {typ}" for col, typ in columns.items())
 
+        query = f"CREATE TABLE IF NOT EXISTS {table_name} ({cols});"
+
+        async with self.conn.cursor() as cursor:
+            await cursor.execute(query)
         await self.conn.commit()
 
-    async def drop_table(self, table_name):
-        async with self.conn.cursor() as cursor:
-            await cursor.execute(
-                """
-                DROP TABLE IF EXISTS %s;
-                """
-                % (table_name),
-            )
+    async def drop_table(self, table_name: str):
+        query = f"DROP TABLE IF EXISTS {table_name};"
 
+        async with self.conn.cursor() as cursor:
+            await cursor.execute(query)
         await self.conn.commit()
 
     async def recreate_table(self, table_name, columns):
