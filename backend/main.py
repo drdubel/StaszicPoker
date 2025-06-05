@@ -1,3 +1,4 @@
+import os
 import json
 from contextlib import asynccontextmanager
 from hashlib import md5
@@ -54,6 +55,10 @@ oauth.register(
     server_metadata_url=CONF_URL,
     client_kwargs={"scope": "openid email profile"},
 )
+
+if not os.path.exists("backend/data/cookies.pickle"):
+    with open("backend/data/cookies.pickle", "wb") as f:
+        dump({}, f)
 
 with open("backend/data/cookies.pickle", "rb") as cookies:
     access_cookies: dict = load(cookies)
