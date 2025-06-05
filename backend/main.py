@@ -1,5 +1,4 @@
 import json
-import os
 from contextlib import asynccontextmanager
 from hashlib import md5
 from pickle import dump, load
@@ -47,7 +46,7 @@ tables: dict[int, Table] = {}
 
 # --- OAuth Setup ---
 
-config = Config("/etc/secrets/.env")
+config = Config("backend/data/.env")
 oauth = OAuth(config)
 CONF_URL = "https://accounts.google.com/.well-known/openid-configuration"
 oauth.register(
@@ -56,11 +55,7 @@ oauth.register(
     client_kwargs={"scope": "openid email profile"},
 )
 
-if not os.path.exists("/etc/secrets/cookies.pickle"):
-    with open("/etc/secrets/cookies.pickle", "wb") as f:
-        dump({}, f)
-
-with open("/etc/secrets/cookies.pickle", "rb") as cookies:
+with open("backend/data/cookies.pickle", "rb") as cookies:
     access_cookies: dict = load(cookies)
 
 # --- API Endpoints ---
@@ -135,7 +130,7 @@ async def auth(request: Request):
         access_token = token_urlsafe()
         access_cookies[access_token] = (user["email"], ws_id)
 
-        with open("/etc/secrets/cookies.pickle", "wb") as cookies:
+        with open("backend/data/cookies.pickle", "wb") as cookies:
             dump(access_cookies, cookies)
 
         response = RedirectResponse(url="https://staszicpoker.onrender.com/lobby")
@@ -150,7 +145,7 @@ async def logout(request: Request, response: Response, access_token: Optional[st
     if access_token in access_cookies:
         access_cookies.pop(access_token)
 
-        with open("/etc/secrets/cookies.pickle", "wb") as cookies:
+        with open("backend/data/cookies.pickle", "wb") as cookies:
             dump(access_cookies, cookies)
 
     request.session.pop("user", None)
