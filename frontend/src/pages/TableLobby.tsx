@@ -6,7 +6,7 @@ interface Cookies {
 }
 
 const TableLobby: React.FC = () => {
-  const [ws, setWs] = useState<WebSocket | null>(null);
+  const [wss, setWs] = useState<WebSocket | null>(null);
   const { tableId } = useParams<{ tableId: string }>();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -25,7 +25,7 @@ const TableLobby: React.FC = () => {
   useEffect(() => {
     const wsId = getCookies()["wsId"];
     const websocket = new WebSocket(
-      `ws://localhost:8000/ws/start/${tableId}/${wsId}`
+      `wss://czupel.dry.pl/wss/start/${tableId}/${wsId}`
     );
 
     websocket.onmessage = (event) => {
@@ -44,10 +44,10 @@ const TableLobby: React.FC = () => {
   }, [tableId]);
 
   const startGame = () => {
-    if (ws) {
+    if (wss) {
       setIsLoading(true);
       const msg = "start";
-      ws.send(msg);
+      wss.send(msg);
     }
   };
 

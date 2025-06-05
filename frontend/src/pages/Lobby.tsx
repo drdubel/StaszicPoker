@@ -32,7 +32,7 @@ const LobbyPage: React.FC = () => {
 
   const fetchTables = async () => {
     try {
-      const response = await fetch("http://localhost:8000/api/tables");
+      const response = await fetch("https://czupel.dry.pl/api/tables");
       const data = await response.json();
       setTables(data.tables || []);
     } catch (error) {
@@ -51,7 +51,7 @@ const LobbyPage: React.FC = () => {
 
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:8000/api/create-table", {
+      const response = await fetch("https://czupel.dry.pl/api/create-table", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -81,13 +81,13 @@ const LobbyPage: React.FC = () => {
 
   const joinGame = (gameId: number) => {
     const wsId = getCookies()["wsId"];
-    const ws = new WebSocket(
-      "ws://localhost:8000/ws/join/" + gameId + "/" + wsId
+    const wss = new WebSocket(
+      "wss://czupel.dry.pl/wss/join/" + gameId + "/" + wsId
     );
     const msg = JSON.stringify({ buyIn: buyInAmount });
 
-    ws.onopen = function () {
-      ws.send(msg);
+    wss.onopen = function () {
+      wss.send(msg);
       window.location.href = "http://localhost:5173/tableLobby/" + gameId;
     };
   };

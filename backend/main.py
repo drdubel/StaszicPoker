@@ -34,7 +34,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["https://staszicpoker.onrender.com"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -133,7 +133,7 @@ async def auth(request: Request):
         with open("backend/data/cookies.pickle", "wb") as cookies:
             dump(access_cookies, cookies)
 
-        response = RedirectResponse(url="http://localhost:5173/lobby")
+        response = RedirectResponse(url="https://staszicpoker.onrender.com/lobby")
         response.set_cookie("access_token", access_token, max_age=3600 * 24 * 30)
         response.set_cookie("wsId", ws_id, max_age=3600 * 24 * 30)
 
@@ -151,12 +151,12 @@ async def logout(request: Request, response: Response, access_token: Optional[st
     request.session.pop("user", None)
     response.delete_cookie(key="access_token")
 
-    return RedirectResponse(url="http://localhost:5173/")
+    return RedirectResponse(url="https://staszicpoker.onrender.com/")
 
 # --- WebSocket Endpoints ---
 
 
-@app.websocket("/ws/start/{tableId}/{wsId}")
+@app.websocket("/wss/start/{tableId}/{wsId}")
 async def start_table(websocket: WebSocket, tableId: int, wsId: str, access_token: Optional[str] = Cookie(None)):
     if tableId not in tables or wsId not in tables[tableId].players:
         logger.info("Player/Table not found")
@@ -179,7 +179,7 @@ async def start_table(websocket: WebSocket, tableId: int, wsId: str, access_toke
         ws_manager.disconnect(websocket)
 
 
-@app.websocket("/ws/join/{tableId}/{wsId}")
+@app.websocket("/wss/join/{tableId}/{wsId}")
 async def join_table(websocket: WebSocket, tableId: int, wsId: str, access_token: Optional[str] = Cookie(None)):
     if tableId not in tables:
         logger.info("Table not found")
@@ -203,7 +203,7 @@ async def join_table(websocket: WebSocket, tableId: int, wsId: str, access_token
         ws_manager.disconnect(websocket)
 
 
-@app.websocket("/ws/nextRound/{tableId}")
+@app.websocket("/wss/nextRound/{tableId}")
 async def next_round(websocket: WebSocket, tableId: int):
     await ws_manager.connect(websocket)
     try:
@@ -220,7 +220,7 @@ async def next_round(websocket: WebSocket, tableId: int):
         ws_manager.disconnect(websocket)
 
 
-@app.websocket("/ws/betting/{tableId}/{wsId}")
+@app.websocket("/wss/betting/{tableId}/{wsId}")
 async def websocket_betting(websocket: WebSocket, tableId: int, wsId: str, access_token: Optional[str] = Cookie(None)):
     if tableId not in tables or wsId not in tables[tableId].players:
         logger.info("Player/Table not found")
@@ -238,7 +238,7 @@ async def websocket_betting(websocket: WebSocket, tableId: int, wsId: str, acces
             if (
                 not tables[tableId].started
                 and tables[tableId].player_num
-                == len([x for x in ws_manager.active_connections if f"/ws/betting/{tableId}" in x.url.path])
+                == len([x for x in ws_manager.active_connections if f"/wss/betting/{tableId}" in x.url.path])
             ):
                 await tables[tableId].next_round()
                 tables[tableId].started = True
@@ -266,7 +266,7 @@ async def websocket_betting(websocket: WebSocket, tableId: int, wsId: str, acces
         ws_manager.disconnect(websocket)
 
 
-@app.websocket("/ws/read/{wsId}")
+@app.websocket("/wss/read/{wsId}")
 async def read_data(websocket: WebSocket, wsId: str):
     await ws_manager.connect(websocket)
     try:
