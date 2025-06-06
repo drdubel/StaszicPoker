@@ -88,7 +88,7 @@ const LobbyPage: React.FC = () => {
 
     ws.onopen = function () {
       ws.send(msg);
-      window.location.href = "http://staszicpoker.onrender.com/tableLobby/" + gameId;
+      window.location.href = "http://staszicpoker-1.onrender.com/tableLobby/" + gameId;
     };
   };
 

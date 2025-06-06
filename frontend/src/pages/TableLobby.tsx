@@ -32,7 +32,7 @@ const TableLobby: React.FC = () => {
       const msg = JSON.parse(event.data);
       console.log(msg);
       if (msg === "0") {
-        window.location.href = `http://staszicpoker.onrender.com/poker/${tableId}`;
+        window.location.href = `http://staszicpoker-1.onrender.com/poker/${tableId}`;
       }
     };
 
