@@ -25,7 +25,7 @@ const TableLobby: React.FC = () => {
   useEffect(() => {
     const wsId = getCookies()["wsId"];
     const websocket = new WebSocket(
-      `wss://czupel.dry.pl/wss/start/${tableId}/${wsId}`
+      `wss://czupel.dry.pl/ws/start/${tableId}/${wsId}`
     );
 
     websocket.onmessage = (event) => {

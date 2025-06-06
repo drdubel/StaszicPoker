@@ -42,7 +42,7 @@ const StatsPage: React.FC = () => {
     const wsId = getCookies()["wsId"];
 
     if (wsId) {
-      const wss = new WebSocket(`wss://czupel.dry.pl/wss/read/${wsId}`);
+      const wss = new WebSocket(`wss://czupel.dry.pl/ws/read/${wsId}`);
       wss.onmessage = (event) => {
         try {
           const data = JSON.parse(JSON.parse(event.data));

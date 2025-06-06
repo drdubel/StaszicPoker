@@ -82,7 +82,7 @@ const LobbyPage: React.FC = () => {
   const joinGame = (gameId: number) => {
     const wsId = getCookies()["wsId"];
     const wss = new WebSocket(
-      "wss://czupel.dry.pl/wss/join/" + gameId + "/" + wsId
+      "wss://czupel.dry.pl/ws/join/" + gameId + "/" + wsId
     );
     const msg = JSON.stringify({ buyIn: buyInAmount });
 
