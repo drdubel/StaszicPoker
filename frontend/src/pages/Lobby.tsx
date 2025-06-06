@@ -81,14 +81,14 @@ const LobbyPage: React.FC = () => {
 
   const joinGame = (gameId: number) => {
     const wsId = getCookies()["wsId"];
-    const wss = new WebSocket(
-      "wss://czupel.dry.pl/wss/join/" + gameId + "/" + wsId
+    const ws = new WebSocket(
+      "ws://czupel.dry.pl/ws/join/" + gameId + "/" + wsId
     );
     const msg = JSON.stringify({ buyIn: buyInAmount });
 
-    wss.onopen = function () {
-      wss.send(msg);
-      window.location.href = "http://localhost:5173/tableLobby/" + gameId;
+    ws.onopen = function () {
+      ws.send(msg);
+      window.location.href = "http://staszicpoker.onrender.com/tableLobby/" + gameId;
     };
   };
 

@@ -6,7 +6,7 @@ interface Cookies {
 }
 
 const TableLobby: React.FC = () => {
-  const [wss, setWs] = useState<WebSocket | null>(null);
+  const [ws, setWs] = useState<WebSocket | null>(null);
   const { tableId } = useParams<{ tableId: string }>();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -25,14 +25,14 @@ const TableLobby: React.FC = () => {
   useEffect(() => {
     const wsId = getCookies()["wsId"];
     const websocket = new WebSocket(
-      `wss://czupel.dry.pl/wss/start/${tableId}/${wsId}`
+      `ws://czupel.dry.pl/ws/start/${tableId}/${wsId}`
     );
 
     websocket.onmessage = (event) => {
       const msg = JSON.parse(event.data);
       console.log(msg);
       if (msg === "0") {
-        window.location.href = `http://localhost:5173/poker/${tableId}`;
+        window.location.href = `http://staszicpoker.onrender.com/poker/${tableId}`;
       }
     };
 
@@ -44,10 +44,10 @@ const TableLobby: React.FC = () => {
   }, [tableId]);
 
   const startGame = () => {
-    if (wss) {
+    if (ws) {
       setIsLoading(true);
       const msg = "start";
-      wss.send(msg);
+      ws.send(msg);
     }
   };
 

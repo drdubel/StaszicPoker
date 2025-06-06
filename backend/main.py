@@ -35,7 +35,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://staszicpoker.onrender.com"],
+    allow_origins=["http://staszicpoker.onrender.com"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -138,7 +138,7 @@ async def auth(request: Request):
         with open("backend/data/cookies.pickle", "wb") as cookies:
             dump(access_cookies, cookies)
 
-        response = RedirectResponse(url="https://staszicpoker.onrender.com/lobby")
+        response = RedirectResponse(url="http://staszicpoker.onrender.com/lobby")
         response.set_cookie("access_token", access_token, max_age=3600 * 24 * 30)
         response.set_cookie("wsId", ws_id, max_age=3600 * 24 * 30)
 
@@ -156,7 +156,7 @@ async def logout(request: Request, response: Response, access_token: Optional[st
     request.session.pop("user", None)
     response.delete_cookie(key="access_token")
 
-    return RedirectResponse(url="https://staszicpoker.onrender.com/")
+    return RedirectResponse(url="http://staszicpoker.onrender.com/")
 
 # --- WebSocket Endpoints ---
 
