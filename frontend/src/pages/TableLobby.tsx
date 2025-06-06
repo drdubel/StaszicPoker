@@ -6,7 +6,7 @@ interface Cookies {
 }
 
 const TableLobby: React.FC = () => {
-  const [ws, setWs] = useState<WebSocket | null>(null);
+  const [wss, setWs] = useState<WebSocket | null>(null);
   const { tableId } = useParams<{ tableId: string }>();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -25,14 +25,14 @@ const TableLobby: React.FC = () => {
   useEffect(() => {
     const wsId = getCookies()["wsId"];
     const websocket = new WebSocket(
-      `ws://czupel.dry.pl/ws/start/${tableId}/${wsId}`
+      `wss://czupel.dry.pl/wss/start/${tableId}/${wsId}`
     );
 
     websocket.onmessage = (event) => {
       const msg = JSON.parse(event.data);
       console.log(msg);
       if (msg === "0") {
-        window.location.href = `http://staszicpoker-1.onrender.com/poker/${tableId}`;
+        window.location.href = `https://staszicpoker-1.onrender.com/poker/${tableId}`;
       }
     };
 
@@ -44,10 +44,10 @@ const TableLobby: React.FC = () => {
   }, [tableId]);
 
   const startGame = () => {
-    if (ws) {
+    if (wss) {
       setIsLoading(true);
       const msg = "start";
-      ws.send(msg);
+      wss.send(msg);
     }
   };
 
@@ -86,7 +86,7 @@ const TableLobby: React.FC = () => {
                 <span className="flex items-center">
                   <svg
                     className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
+                    xmlns="https://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
                   >
