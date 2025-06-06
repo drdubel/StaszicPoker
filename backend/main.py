@@ -161,7 +161,7 @@ async def logout(request: Request, response: Response, access_token: Optional[st
 # --- WebSocket Endpoints ---
 
 
-@app.websocket("/wss/start/{tableId}/{wsId}")
+@app.websocket("/ws/start/{tableId}/{wsId}")
 async def start_table(websocket: WebSocket, tableId: int, wsId: str, access_token: Optional[str] = Cookie(None)):
     if tableId not in tables or wsId not in tables[tableId].players:
         logger.info("Player/Table not found")
@@ -184,7 +184,7 @@ async def start_table(websocket: WebSocket, tableId: int, wsId: str, access_toke
         ws_manager.disconnect(websocket)
 
 
-@app.websocket("/wss/join/{tableId}/{wsId}")
+@app.websocket("/ws/join/{tableId}/{wsId}")
 async def join_table(websocket: WebSocket, tableId: int, wsId: str, access_token: Optional[str] = Cookie(None)):
     if tableId not in tables:
         logger.info("Table not found")
@@ -208,7 +208,7 @@ async def join_table(websocket: WebSocket, tableId: int, wsId: str, access_token
         ws_manager.disconnect(websocket)
 
 
-@app.websocket("/wss/nextRound/{tableId}")
+@app.websocket("/ws/nextRound/{tableId}")
 async def next_round(websocket: WebSocket, tableId: int):
     await ws_manager.connect(websocket)
     try:
@@ -225,7 +225,7 @@ async def next_round(websocket: WebSocket, tableId: int):
         ws_manager.disconnect(websocket)
 
 
-@app.websocket("/wss/betting/{tableId}/{wsId}")
+@app.websocket("/ws/betting/{tableId}/{wsId}")
 async def websocket_betting(websocket: WebSocket, tableId: int, wsId: str, access_token: Optional[str] = Cookie(None)):
     if tableId not in tables or wsId not in tables[tableId].players:
         logger.info("Player/Table not found")
@@ -243,7 +243,7 @@ async def websocket_betting(websocket: WebSocket, tableId: int, wsId: str, acces
             if (
                 not tables[tableId].started
                 and tables[tableId].player_num
-                == len([x for x in ws_manager.active_connections if f"/wss/betting/{tableId}" in x.url.path])
+                == len([x for x in ws_manager.active_connections if f"/ws/betting/{tableId}" in x.url.path])
             ):
                 await tables[tableId].next_round()
                 tables[tableId].started = True
@@ -271,7 +271,7 @@ async def websocket_betting(websocket: WebSocket, tableId: int, wsId: str, acces
         ws_manager.disconnect(websocket)
 
 
-@app.websocket("/wss/read/{wsId}")
+@app.websocket("/ws/read/{wsId}")
 async def read_data(websocket: WebSocket, wsId: str):
     await ws_manager.connect(websocket)
     try:
