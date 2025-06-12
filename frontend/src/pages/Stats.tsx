@@ -42,8 +42,8 @@ const StatsPage: React.FC = () => {
     const wsId = getCookies()["wsId"];
 
     if (wsId) {
-      const wss = new WebSocket(`wss://czupel.dry.pl/ws/read/${wsId}`);
-      wss.onmessage = (event) => {
+      const ws = new WebSocket(`ws://czupel.dry.pl/ws/read/${wsId}`);
+      ws.onmessage = (event) => {
         try {
           const data = JSON.parse(JSON.parse(event.data));
           const playersData: PlayerData[] = data.map((item: any[]) => ({
@@ -57,7 +57,7 @@ const StatsPage: React.FC = () => {
           console.error("Error processing WebSocket data:", error);
         }
       };
-      wsRef.current = wss;
+      wsRef.current = ws;
     }
 
     return () => wsRef.current?.close();
