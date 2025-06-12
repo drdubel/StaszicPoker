@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 const PokerPage: React.FC = () => {
   const { tableId } = useParams();
+  const navigate = useNavigate();
   const [currentBet, setCurrentBet] = useState(0);
   const [currentPot, setCurrentPot] = useState(0);
   const [yourCurrentBet, setYourCurrentBet] = useState(0);
@@ -39,7 +40,7 @@ const PokerPage: React.FC = () => {
   useEffect(() => {
     const wsId = getCookies()["wsId"];
     const betting = new WebSocket(
-      `wss://czupel.dry.pl/ws/betting/${tableId}/${wsId}`
+      `ws://localhost:8000/ws/betting/${tableId}/${wsId}`
     );
     wsRef.current = betting;
 
@@ -131,6 +132,13 @@ const PokerPage: React.FC = () => {
     }
   };
 
+  const exitGame = () => {
+    if (wsRef.current) {
+      wsRef.current.close();
+    }
+    navigate("/lobby");
+  };
+
   const PlayerPosition: React.FC<{
     player: (typeof players)[0];
     isCurrentPlayer: boolean;
@@ -187,8 +195,31 @@ const PokerPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-900 via-slate-900 to-emerald-950 p-4">
+      {/* Exit Button */}
+      <div className="absolute top-6 left-6 z-30">
+        <button
+          onClick={exitGame}
+          className="bg-slate-700/80 hover:bg-slate-700 text-white px-4 py-2 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl flex items-center space-x-2 backdrop-blur-sm border border-slate-600/50"
+        >
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+          <span>Exit</span>
+        </button>
+      </div>
+
       {/* Poker Table */}
-      <div className="relative max-w-7xl mx-auto">
+      <div className="relative max-w-7xl mx-auto pt-16">
         {/* Game Info Bar */}
         <div className="flex justify-between items-center mb-8 bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50">
           <div className="flex space-x-8">
@@ -223,7 +254,7 @@ const PokerPage: React.FC = () => {
           <div
             className="absolute inset-0 rounded-[11rem] opacity-30"
             style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='https://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
             }}
           />
 
