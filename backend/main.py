@@ -140,8 +140,8 @@ async def auth(request: Request):
             dump(access_cookies, cookies)
 
         response = RedirectResponse(url="https://staszicpoker-1.onrender.com/lobby")
-        response.set_cookie("access_token", access_token, max_age=3600 * 24 * 30)
-        response.set_cookie("wsId", ws_id, max_age=3600 * 24 * 30)
+        response.set_cookie("access_token", access_token, max_age=3600 * 24 * 30, httponly=True, secure=True, samesite=None, domain=".onrender.com")
+        response.set_cookie("wsId", ws_id, max_age=3600 * 24 * 30, httponly=True, secure=True, samesite=None, domain=".onrender.com")
 
         return response
 
