@@ -81,13 +81,13 @@ const LobbyPage: React.FC = () => {
 
   const joinGame = (gameId: number) => {
     const wsId = getCookies()["wsId"];
-    const ws = new WebSocket(
-      "ws://czupel.dry.pl/ws/join/" + gameId + "/" + wsId
+    const wss = new WebSocket(
+      "wss://czupel.dry.pl/wss/join/" + gameId + "/" + wsId
     );
     const msg = JSON.stringify({ buyIn: buyInAmount });
 
-    ws.onopen = function () {
-      ws.send(msg);
+    wss.onopen = function () {
+      wss.send(msg);
       window.location.href = "https://staszicpoker-1.onrender.com/tableLobby/" + gameId;
     };
   };
