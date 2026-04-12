@@ -25,14 +25,14 @@ const TableLobby: React.FC = () => {
   useEffect(() => {
     const wsId = getCookies()["wsId"];
     const websocket = new WebSocket(
-      `wss://czupel.dry.pl/wss/start/${tableId}/${wsId}`
+      `ws://127.0.0.1:8000/ws/start/${tableId}/${wsId}`
     );
 
     websocket.onmessage = (event) => {
       const msg = JSON.parse(event.data);
       console.log(msg);
       if (msg === "0") {
-        window.location.href = `https://staszicpoker-1.onrender.com/poker/${tableId}`;
+        window.location.href = `http://127.0.0.1:8000/poker/${tableId}`;
       }
     };
 

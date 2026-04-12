@@ -32,7 +32,7 @@ const LobbyPage: React.FC = () => {
 
   const fetchTables = async () => {
     try {
-      const response = await fetch("https://czupel.dry.pl/api/tables");
+      const response = await fetch("http://127.0.0.1:8000/api/tables");
       const data = await response.json();
       setTables(data.tables || []);
     } catch (error) {
@@ -51,7 +51,7 @@ const LobbyPage: React.FC = () => {
 
     setLoading(true);
     try {
-      const response = await fetch("https://czupel.dry.pl/api/create-table", {
+      const response = await fetch("http://127.0.0.1:8000/api/create-table", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -82,13 +82,13 @@ const LobbyPage: React.FC = () => {
   const joinGame = (gameId: number) => {
     const wsId = getCookies()["wsId"];
     const wss = new WebSocket(
-      "wss://czupel.dry.pl/wss/join/" + gameId + "/" + wsId
+      "ws://127.0.0.1:8000/ws/join/" + gameId + "/" + wsId
     );
     const msg = JSON.stringify({ buyIn: buyInAmount });
 
     wss.onopen = function () {
       wss.send(msg);
-      window.location.href = "https://staszicpoker-1.onrender.com/tableLobby/" + gameId;
+      window.location.href = "http://127.0.0.1:5173/tableLobby/" + gameId;
     };
   };
 

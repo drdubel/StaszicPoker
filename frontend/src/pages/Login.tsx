@@ -4,7 +4,7 @@ const ModernLogin: React.FC = () => {
   const [isHovered, setIsHovered] = useState(false);
 
   const handleLogin = () => {
-    window.location.href = "https://czupel.dry.pl/login";
+    window.location.href = "http://127.0.0.1:8000/login";
   };
 
   return (

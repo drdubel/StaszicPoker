@@ -117,7 +117,7 @@ async def poker_room(tableId: int):
 
 @app.get("/login")
 async def login(request: Request):
-    redirect_uri = "https://czupel.dry.pl/auth"
+    redirect_uri = "http://127.0.0.1:8000/auth"
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 
@@ -139,7 +139,7 @@ async def auth(request: Request):
         with open("backend/data/cookies.pickle", "wb") as cookies:
             dump(access_cookies, cookies)
 
-        response = RedirectResponse(url="https://staszicpoker-1.onrender.com/lobby")
+        response = RedirectResponse(url="http://127.0.0.1:5173/lobby")
         response.set_cookie("access_token", access_token, max_age=3600 * 24 * 30, httponly=True, secure=True, samesite=None, domain=".onrender.com")
         response.set_cookie("wsId", ws_id, max_age=3600 * 24 * 30, httponly=True, secure=True, samesite=None, domain=".onrender.com")
 
@@ -157,7 +157,7 @@ async def logout(request: Request, response: Response, access_token: Optional[st
     request.session.pop("user", None)
     response.delete_cookie(key="access_token")
 
-    return RedirectResponse(url="https://staszicpoker-1.onrender.com/")
+    return RedirectResponse(url="http://127.0.0.1:8000/")
 
 # --- WebSocket Endpoints ---
 

@@ -40,7 +40,7 @@ const PokerPage: React.FC = () => {
   useEffect(() => {
     const wsId = getCookies()["wsId"];
     const betting = new WebSocket(
-      `wss://czupel.dry.pl/wss/betting/${tableId}/${wsId}`
+      `ws://127.0.0.1:8000/ws/betting/${tableId}/${wsId}`
     );
     wsRef.current = betting;
 
