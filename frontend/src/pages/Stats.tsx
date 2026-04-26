@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
+const WS_BASE =
+  window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost"
+    ? "ws://127.0.0.1:8000"
+    : `wss://${window.location.host}`;
+
 interface PlayerData {
   userid: string;
   wins: number;
@@ -42,7 +47,7 @@ const StatsPage: React.FC = () => {
     const wsId = getCookies()["wsId"];
 
     if (wsId) {
-      const wss = new WebSocket(`ws://127.0.0.1:8000/ws/read/${wsId}`);
+      const wss = new WebSocket(`${WS_BASE}/ws/read/${wsId}`);
       wss.onmessage = (event) => {
         try {
           const data = JSON.parse(JSON.parse(event.data));

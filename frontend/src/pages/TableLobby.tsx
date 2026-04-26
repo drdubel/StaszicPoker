@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
+const WS_BASE =
+  window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost"
+    ? "ws://127.0.0.1:8000"
+    : `wss://${window.location.host}`;
+
 interface Cookies {
   [key: string]: string;
 }
@@ -23,16 +28,18 @@ const TableLobby: React.FC = () => {
   };
 
   useEffect(() => {
-    const wsId = getCookies()["wsId"];
+    const cookies = getCookies();
+    const wsId = cookies["wsId"];
+    const token = cookies["access_token"];
     const websocket = new WebSocket(
-      `ws://127.0.0.1:8000/ws/start/${tableId}/${wsId}`
+      `${WS_BASE}/ws/start/${tableId}/${wsId}?token=${token}`
     );
 
     websocket.onmessage = (event) => {
       const msg = JSON.parse(event.data);
       console.log(msg);
       if (msg === "0") {
-        window.location.href = `http://127.0.0.1:8000/poker/${tableId}`;
+        window.location.href = `/poker/${tableId}`;
       }
     };
 

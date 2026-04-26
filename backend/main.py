@@ -9,7 +9,7 @@ from typing import Optional
 import structlog
 from funkybob import UniqueRandomNameGenerator
 from authlib.integrations.starlette_client import OAuth, OAuthError
-from fastapi import Cookie, FastAPI, Response, WebSocket, WebSocketDisconnect
+from fastapi import Cookie, FastAPI, Query, Response, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.config import Config
 from starlette.middleware.sessions import SessionMiddleware
@@ -35,7 +35,10 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://staszicpoker-1.onrender.com"],
+    allow_origins=[
+        "http://127.0.0.1:5173",
+        "http://localhost:5173",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -115,9 +118,13 @@ async def poker_room(tableId: int):
 # --- Auth Endpoints ---
 
 
+FRONTEND_URL = "http://127.0.0.1:5173"
+BACKEND_URL = "http://127.0.0.1:8000"
+
+
 @app.get("/login")
 async def login(request: Request):
-    redirect_uri = "http://127.0.0.1:8000/auth"
+    redirect_uri = f"{BACKEND_URL}/auth"
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 
@@ -139,9 +146,9 @@ async def auth(request: Request):
         with open("backend/data/cookies.pickle", "wb") as cookies:
             dump(access_cookies, cookies)
 
-        response = RedirectResponse(url="http://127.0.0.1:5173/lobby")
-        response.set_cookie("access_token", access_token, max_age=3600 * 24 * 30, httponly=True, secure=True, samesite=None, domain=".onrender.com")
-        response.set_cookie("wsId", ws_id, max_age=3600 * 24 * 30, httponly=True, secure=True, samesite=None, domain=".onrender.com")
+        response = RedirectResponse(url=f"{FRONTEND_URL}/lobby")
+        response.set_cookie("access_token", access_token, max_age=3600 * 24 * 30, httponly=False, samesite="lax")
+        response.set_cookie("wsId", ws_id, max_age=3600 * 24 * 30, httponly=False, samesite="lax")
 
         return response
 
@@ -157,20 +164,26 @@ async def logout(request: Request, response: Response, access_token: Optional[st
     request.session.pop("user", None)
     response.delete_cookie(key="access_token")
 
-    return RedirectResponse(url="http://127.0.0.1:8000/")
+    return RedirectResponse(url=f"{FRONTEND_URL}/")
 
 # --- WebSocket Endpoints ---
 
 
+def _authorized(wsId: str, token: Optional[str]) -> bool:
+    return token is not None and token in access_cookies and access_cookies[token][1] == wsId
+
+
 @app.websocket("/ws/start/{tableId}/{wsId}")
-async def start_table(websocket: WebSocket, tableId: int, wsId: str, access_token: Optional[str] = Cookie(None)):
+async def start_table(websocket: WebSocket, tableId: int, wsId: str, token: Optional[str] = Query(None)):
+    await ws_manager.connect(websocket)
     if tableId not in tables or wsId not in tables[tableId].players:
         logger.info("Player/Table not found")
+        await websocket.close(code=4404)
         return
-    if access_token not in access_cookies or wsId != access_cookies[access_token][1]:
+    if not _authorized(wsId, token):
         logger.info("Player not authorized")
+        await websocket.close(code=4401)
         return
-    await ws_manager.connect(websocket)
     try:
         message = await websocket.receive_text()
         logger.info(message)
@@ -186,14 +199,16 @@ async def start_table(websocket: WebSocket, tableId: int, wsId: str, access_toke
 
 
 @app.websocket("/ws/join/{tableId}/{wsId}")
-async def join_table(websocket: WebSocket, tableId: int, wsId: str, access_token: Optional[str] = Cookie(None)):
+async def join_table(websocket: WebSocket, tableId: int, wsId: str, token: Optional[str] = Query(None)):
+    await ws_manager.connect(websocket)
     if tableId not in tables:
         logger.info("Table not found")
+        await websocket.close(code=4404)
         return
-    if access_token not in access_cookies or wsId != access_cookies[access_token][1]:
+    if not _authorized(wsId, token):
         logger.info("Player not authorized")
+        await websocket.close(code=4401)
         return
-    await ws_manager.connect(websocket)
     try:
         message = await websocket.receive_text()
         message = json.loads(message)
@@ -227,14 +242,16 @@ async def next_round(websocket: WebSocket, tableId: int):
 
 
 @app.websocket("/ws/betting/{tableId}/{wsId}")
-async def websocket_betting(websocket: WebSocket, tableId: int, wsId: str, access_token: Optional[str] = Cookie(None)):
+async def websocket_betting(websocket: WebSocket, tableId: int, wsId: str, token: Optional[str] = Query(None)):
+    await ws_manager.connect(websocket)
     if tableId not in tables or wsId not in tables[tableId].players:
         logger.info("Player/Table not found")
+        await websocket.close(code=4404)
         return
-    if access_token not in access_cookies or wsId != access_cookies[access_token][1]:
+    if not _authorized(wsId, token):
         logger.info("Player not authorized")
+        await websocket.close(code=4401)
         return
-    await ws_manager.connect(websocket)
     try:
         if tableId in tables:
             if not tables[tableId].started:

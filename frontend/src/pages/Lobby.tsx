@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from "react";
 
+const API_BASE =
+  window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost"
+    ? "http://127.0.0.1:8000"
+    : "";
+
 interface Table {
   id: number;
   name: string;
@@ -32,7 +37,7 @@ const LobbyPage: React.FC = () => {
 
   const fetchTables = async () => {
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/tables");
+      const response = await fetch(`${API_BASE}/api/tables`);
       const data = await response.json();
       setTables(data.tables || []);
     } catch (error) {
@@ -51,7 +56,7 @@ const LobbyPage: React.FC = () => {
 
     setLoading(true);
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/create-table", {
+      const response = await fetch(`${API_BASE}/api/create-table`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -80,15 +85,18 @@ const LobbyPage: React.FC = () => {
   };
 
   const joinGame = (gameId: number) => {
-    const wsId = getCookies()["wsId"];
+    const cookies = getCookies();
+    const wsId = cookies["wsId"];
+    const token = cookies["access_token"];
+    const wsBase = API_BASE.replace(/^http/, "ws") || `ws://${window.location.host}`;
     const wss = new WebSocket(
-      "ws://127.0.0.1:8000/ws/join/" + gameId + "/" + wsId
+      `${wsBase}/ws/join/${gameId}/${wsId}?token=${token}`
     );
     const msg = JSON.stringify({ buyIn: buyInAmount });
 
     wss.onopen = function () {
       wss.send(msg);
-      window.location.href = "http://127.0.0.1:5173/tableLobby/" + gameId;
+      window.location.href = "/tableLobby/" + gameId;
     };
   };
 

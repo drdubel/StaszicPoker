@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
+const WS_BASE =
+  window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost"
+    ? "ws://127.0.0.1:8000"
+    : `wss://${window.location.host}`;
+
 const PokerPage: React.FC = () => {
   const { tableId } = useParams();
   const navigate = useNavigate();
@@ -38,9 +43,11 @@ const PokerPage: React.FC = () => {
   };
 
   useEffect(() => {
+    const cookies = getCookies();
     const wsId = getCookies()["wsId"];
+    const token = cookies["access_token"];
     const betting = new WebSocket(
-      `ws://127.0.0.1:8000/ws/betting/${tableId}/${wsId}`
+      `${WS_BASE}/ws/betting/${tableId}/${wsId}?token=${token}`
     );
     wsRef.current = betting;
 

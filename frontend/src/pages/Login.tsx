@@ -1,10 +1,15 @@
 import React, { useState } from "react";
 
+const API_BASE =
+  window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost"
+    ? "http://127.0.0.1:8000"
+    : "";
+
 const ModernLogin: React.FC = () => {
   const [isHovered, setIsHovered] = useState(false);
 
   const handleLogin = () => {
-    window.location.href = "http://127.0.0.1:8000/login";
+    window.location.href = `${API_BASE}/login`;
   };
 
   return (
